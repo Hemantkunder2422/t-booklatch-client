@@ -1,9 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarCheck, CalendarX2, CircleDollarSign, Mail, MessageSquare } from "lucide-react";
+import {
+  CalendarCheck,
+  CalendarX2,
+  Check,
+  CircleDollarSign,
+  Mail,
+  MessageSquare,
+  Smartphone,
+} from "lucide-react";
 import { toast } from "sonner";
 import { WhatsappIcon } from "@/features/onboarding/brand-icons";
+import { PAYMENT_GATEWAYS } from "@/features/onboarding/data";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -104,6 +113,17 @@ export function SettingsView() {
     sms: false,
     email: true,
   });
+  const [payments, setPayments] = useState({
+    gateway: "stripe",
+    connected: true,
+    upiEnabled: true,
+    upiId: "aurora-events@okhdfcbank",
+    depositPct: "25",
+    payoutSchedule: "weekly",
+  });
+  const gatewayMeta =
+    PAYMENT_GATEWAYS.find((g) => g.value === payments.gateway) ??
+    PAYMENT_GATEWAYS[0];
 
   return (
     <>
@@ -118,6 +138,7 @@ export function SettingsView() {
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="communication">Communication</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
         </TabsList>
@@ -260,6 +281,208 @@ export function SettingsView() {
               <Button
                 onClick={() => toast.success("Communication settings saved")}
               >
+                Save changes
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+
+        {/* Payments */}
+        <TabsContent value="payments" className="space-y-6">
+          {/* Gateway */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment gateway</CardTitle>
+              <CardDescription>
+                Connect a provider to collect deposits and payments.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between gap-4 rounded-xl border p-4">
+                <div className="flex items-center gap-3">
+                  <gatewayMeta.icon className="size-10 rounded-lg" />
+                  <div>
+                    <p className="font-medium">{gatewayMeta.name}</p>
+                    <p
+                      className={cn(
+                        "flex items-center gap-1 text-xs",
+                        payments.connected
+                          ? "text-success"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      {payments.connected ? (
+                        <>
+                          <Check className="size-3.5" /> Connected
+                        </>
+                      ) : (
+                        "Not connected"
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={payments.connected}
+                  onCheckedChange={(v) =>
+                    setPayments((p) => ({ ...p, connected: v }))
+                  }
+                />
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Provider</Label>
+                  <Select
+                    value={payments.gateway}
+                    onValueChange={(v) =>
+                      setPayments((p) => ({ ...p, gateway: v }))
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_GATEWAYS.map((g) => (
+                        <SelectItem key={g.value} value={g.value}>
+                          {g.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="api-key">API secret key</Label>
+                  <Input
+                    id="api-key"
+                    type="password"
+                    defaultValue="sk_live_51Hb...92Kf"
+                  />
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="justify-end border-t">
+              <Button onClick={() => toast.success("Gateway settings saved")}>
+                Save changes
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* UPI */}
+          <Card>
+            <CardHeader>
+              <CardTitle>UPI payments</CardTitle>
+              <CardDescription>
+                Accept instant UPI payments (GPay, PhonePe, Paytm & more).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between gap-4 rounded-xl border bg-muted/30 p-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex size-9 items-center justify-center rounded-lg bg-success/15 text-success">
+                    <Smartphone className="size-5" />
+                  </span>
+                  <div className="space-y-0.5">
+                    <Label htmlFor="upi-enabled" className="font-medium">
+                      Enable UPI
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Let customers pay via any UPI app.
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="upi-enabled"
+                  checked={payments.upiEnabled}
+                  onCheckedChange={(v) =>
+                    setPayments((p) => ({ ...p, upiEnabled: v }))
+                  }
+                />
+              </div>
+              <div
+                className={cn(
+                  "space-y-2 transition-opacity",
+                  !payments.upiEnabled && "pointer-events-none opacity-50",
+                )}
+              >
+                <Label htmlFor="upi-id">UPI ID (VPA)</Label>
+                <Input
+                  id="upi-id"
+                  placeholder="yourbusiness@bank"
+                  value={payments.upiId}
+                  onChange={(e) =>
+                    setPayments((p) => ({ ...p, upiId: e.target.value }))
+                  }
+                  disabled={!payments.upiEnabled}
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="justify-end border-t">
+              <Button onClick={() => toast.success("UPI settings saved")}>
+                Save changes
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* Deposits & payouts */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Deposits & payouts</CardTitle>
+              <CardDescription>
+                Set how much you collect upfront and when you get paid.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-5 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="deposit-pct">Default deposit (%)</Label>
+                <Input
+                  id="deposit-pct"
+                  inputMode="numeric"
+                  value={payments.depositPct}
+                  onChange={(e) =>
+                    setPayments((p) => ({
+                      ...p,
+                      depositPct: e.target.value.replace(/[^0-9]/g, ""),
+                    }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Payout schedule</Label>
+                <Select
+                  value={payments.payoutSchedule}
+                  onValueChange={(v) =>
+                    setPayments((p) => ({ ...p, payoutSchedule: v }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Payout account</Label>
+                <div className="flex items-center justify-between rounded-lg border px-3 py-2.5 text-sm">
+                  <span className="flex items-center gap-2">
+                    <CircleDollarSign className="size-4 text-muted-foreground" />
+                    Bank account •••• 4242
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toast.info("Update isn't wired up in the demo.")}
+                  >
+                    Update
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="justify-end border-t">
+              <Button onClick={() => toast.success("Payout settings saved")}>
                 Save changes
               </Button>
             </CardFooter>
