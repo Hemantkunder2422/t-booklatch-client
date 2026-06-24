@@ -12,14 +12,17 @@ import {
   ChevronsUpDown,
   Contact,
   DoorOpen,
+  FileText,
   Inbox,
   LayoutDashboard,
   LogOut,
+  Package,
   Plus,
   Settings,
   Sparkles,
   User,
   Users,
+  UsersRound,
 } from "lucide-react";
 import {
   Avatar,
@@ -52,11 +55,14 @@ import { getInitials } from "@/lib/utils";
 const MAIN_NAV = [
   { title: "Dashboard", href: "/", icon: LayoutDashboard },
   { title: "Bookings", href: "/bookings", icon: CalendarCheck },
+  { title: "Invoices", href: "/invoices", icon: FileText },
   { title: "Enquiries", href: "/enquiries", icon: Inbox },
   { title: "Customers", href: "/customers", icon: Users },
   { title: "Contacts", href: "/contacts", icon: Contact },
   { title: "Calendars", href: "/calendars", icon: CalendarDays },
   { title: "My Spaces", href: "/spaces", icon: DoorOpen },
+  { title: "Packages", href: "/packages", icon: Package },
+  { title: "Staff", href: "/staff", icon: UsersRound },
 ];
 
 const VENUES = [

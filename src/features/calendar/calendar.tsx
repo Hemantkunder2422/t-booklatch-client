@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   STATUS_ORDER,
   STATUS_META,
+  STATUS_PRIORITY,
   type CalendarEvent,
   type SlotStatus,
 } from "./types";
@@ -152,27 +153,30 @@ function DayCell({
   const statuses = uniqueStatuses(events);
 
   if (isMini) {
+    const dominant = STATUS_PRIORITY.find((s) => statuses.includes(s));
     return (
       <button
         type="button"
         onClick={onClick}
         className={cn(
-          "relative flex aspect-square flex-col items-center justify-center rounded-lg text-xs transition-colors",
+          "relative flex aspect-square flex-col items-center justify-center gap-1 rounded-lg text-xs font-medium transition-all",
           inCurrentMonth ? "text-foreground" : "text-muted-foreground/40",
           isSelected
-            ? "bg-primary text-primary-foreground"
-            : "hover:bg-muted",
-          isToday && !isSelected && "font-semibold text-primary",
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : dominant
+              ? cn(STATUS_META[dominant].soft, "hover:brightness-95")
+              : "hover:bg-muted",
+          isToday && !isSelected && "ring-1 ring-primary/50",
         )}
       >
-        <span>{dateNumber}</span>
+        <span className="leading-none">{dateNumber}</span>
         {statuses.length > 0 && (
-          <span className="absolute bottom-1 flex gap-0.5">
+          <span className="flex gap-0.5">
             {statuses.slice(0, 3).map((status) => (
               <span
                 key={status}
                 className={cn(
-                  "size-1 rounded-full",
+                  "size-1.5 rounded-full",
                   isSelected ? "bg-primary-foreground" : STATUS_META[status].dot,
                 )}
               />

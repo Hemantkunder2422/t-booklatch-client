@@ -13,9 +13,18 @@ export interface CalendarEvent {
   date: string;
   status: SlotStatus;
   title: string;
+  space?: string;
   note?: string;
   booking?: BookingInfo;
 }
+
+/** Priority used to pick a single dominant status for a day cell. */
+export const STATUS_PRIORITY: SlotStatus[] = [
+  "booked",
+  "blocked",
+  "pending",
+  "available",
+];
 
 export const STATUS_META: Record<
   SlotStatus,

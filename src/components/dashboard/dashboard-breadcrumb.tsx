@@ -14,11 +14,14 @@ import {
 
 const LABELS: Record<string, string> = {
   bookings: "Bookings",
+  invoices: "Invoices",
   enquiries: "Enquiries",
   customers: "Customers",
   contacts: "Contacts",
   calendars: "Calendars",
   spaces: "My Spaces",
+  packages: "Packages",
+  staff: "Staff",
   profile: "Profile",
   settings: "Settings",
 };

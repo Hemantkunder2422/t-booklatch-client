@@ -12,18 +12,35 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Calendar } from "./calendar";
-import { buildSampleEvents } from "./sample-events";
+import { CalendarLegend } from "./calendar-legend";
+import { SAMPLE_SPACES, buildSampleEvents } from "./sample-events";
 import { STATUS_META } from "./types";
 import { dateKey } from "./utils";
 
 export function SpaceAvailabilityCard() {
-  const [{ events, initialDate }] = useState(() => {
+  const [{ allEvents, initialDate }] = useState(() => {
     const now = new Date();
-    return { events: buildSampleEvents(now), initialDate: now };
+    return { allEvents: buildSampleEvents(now), initialDate: now };
   });
   const [selected, setSelected] = useState<Date | null>(initialDate);
+  const [space, setSpace] = useState("all");
+
+  const events = useMemo(
+    () =>
+      space === "all"
+        ? allEvents
+        : allEvents.filter((e) => e.space === space),
+    [allEvents, space],
+  );
 
   const selectedKey = selected ? dateKey(selected) : null;
   const dayEvents = useMemo(
@@ -46,6 +63,21 @@ export function SpaceAvailabilityCard() {
         </CardAction>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* Space selector */}
+        <Select value={space} onValueChange={setSpace}>
+          <SelectTrigger className="w-full" size="sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All spaces</SelectItem>
+            {SAMPLE_SPACES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Calendar
           events={events}
           selected={selected}
@@ -53,6 +85,8 @@ export function SpaceAvailabilityCard() {
           variant="mini"
           defaultMonth={initialDate}
         />
+
+        <CalendarLegend className="justify-between gap-y-1 border-t pt-3" />
 
         {/* Selected-day quick summary */}
         <div className="space-y-1.5 border-t pt-3">
@@ -70,7 +104,7 @@ export function SpaceAvailabilityCard() {
               <div key={event.id} className="flex items-center gap-2 text-sm">
                 <span
                   className={cn(
-                    "size-1.5 shrink-0 rounded-full",
+                    "size-2 shrink-0 rounded-full",
                     STATUS_META[event.status].dot,
                   )}
                 />

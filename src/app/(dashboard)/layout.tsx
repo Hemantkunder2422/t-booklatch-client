@@ -1,9 +1,8 @@
 import { cookies } from "next/headers";
-import { Bell } from "lucide-react";
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { DashboardBreadcrumb } from "@/components/dashboard/dashboard-breadcrumb";
+import { NotificationsMenu } from "@/components/dashboard/notifications-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
@@ -30,16 +29,8 @@ export default async function DashboardLayout({
             className="mr-2 data-[orientation=vertical]:h-4"
           />
           <DashboardBreadcrumb />
-          <div className="ml-auto flex items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative"
-              aria-label="Notifications"
-            >
-              <Bell className="size-[1.1rem]" />
-              <span className="absolute top-2 right-2 size-2 rounded-full bg-primary ring-2 ring-background" />
-            </Button>
+          <div className="ml-auto flex items-center gap-1">
+            <NotificationsMenu />
             <ThemeToggle />
           </div>
         </header>

@@ -1,6 +1,13 @@
 import type { CalendarEvent } from "./types";
 import { addMonths, dateKey } from "./utils";
 
+export const SAMPLE_SPACES = [
+  "Grand Atrium Hall",
+  "Riverside Pavilion",
+  "The Glasshouse Loft",
+  "Skyline Rooftop",
+];
+
 /**
  * Build a realistic spread of events for the given month and the next,
  * so the calendar always shows data near "today".
@@ -18,6 +25,7 @@ export function buildSampleEvents(base: Date): CalendarEvent[] {
         date: k(3),
         status: "booked",
         title: "Wedding — Olivia B.",
+        space: "Grand Atrium Hall",
         note: "Plated dinner for 180. AV team arrives 2pm.",
         booking: {
           customer: "Olivia Bennett",
@@ -31,6 +39,7 @@ export function buildSampleEvents(base: Date): CalendarEvent[] {
         date: k(3),
         status: "pending",
         title: "Hold — Corporate offsite",
+        space: "Riverside Pavilion",
         note: "Awaiting deposit from Northwind Inc.",
       },
       {
@@ -38,6 +47,7 @@ export function buildSampleEvents(base: Date): CalendarEvent[] {
         date: k(8),
         status: "booked",
         title: "Conference — Northwind",
+        space: "Riverside Pavilion",
         booking: {
           customer: "Marcus Reid",
           space: "Riverside Pavilion",
@@ -50,12 +60,14 @@ export function buildSampleEvents(base: Date): CalendarEvent[] {
         date: k(12),
         status: "available",
         title: "Open for bookings",
+        space: "The Glasshouse Loft",
       },
       {
         id: id(5),
         date: k(14),
         status: "blocked",
         title: "Maintenance",
+        space: "Skyline Rooftop",
         note: "Floor refinishing — no events.",
       },
       {
@@ -63,6 +75,7 @@ export function buildSampleEvents(base: Date): CalendarEvent[] {
         date: k(17),
         status: "pending",
         title: "Hold — Birthday party",
+        space: "The Glasshouse Loft",
         note: "Tentative, confirming headcount.",
       },
       {
@@ -70,6 +83,7 @@ export function buildSampleEvents(base: Date): CalendarEvent[] {
         date: k(20),
         status: "booked",
         title: "Gala — Aurora Foundation",
+        space: "The Glasshouse Loft",
         note: "Black-tie. Valet required.",
         booking: {
           customer: "Priya Nair",
@@ -83,12 +97,14 @@ export function buildSampleEvents(base: Date): CalendarEvent[] {
         date: k(20),
         status: "available",
         title: "Rooftop open",
+        space: "Skyline Rooftop",
       },
       {
         id: id(9),
         date: k(24),
         status: "booked",
         title: "Product launch",
+        space: "Skyline Rooftop",
         booking: {
           customer: "Daniel Cho",
           space: "Skyline Rooftop",
@@ -101,6 +117,7 @@ export function buildSampleEvents(base: Date): CalendarEvent[] {
         date: k(27),
         status: "pending",
         title: "Hold — Workshop",
+        space: "Grand Atrium Hall",
       },
     ];
   };
