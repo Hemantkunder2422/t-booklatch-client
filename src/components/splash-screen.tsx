@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Building2 } from "lucide-react";
+import { BookLatchMark } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 
 type Phase = "show" | "leaving" | "done";
@@ -53,7 +53,7 @@ export function SplashScreen() {
           <span className="absolute inset-0 rounded-3xl bg-primary/40 [animation:splash-ring_2.2s_ease-out_infinite]" />
           <span className="absolute inset-0 rounded-3xl bg-primary/30 [animation:splash-ring_2.2s_ease-out_infinite_0.6s]" />
           <div className="relative flex size-20 items-center justify-center rounded-3xl bg-linear-to-br from-primary to-chart-4 text-primary-foreground shadow-2xl shadow-primary/40 duration-700 animate-in zoom-in-50 fade-in">
-            <Building2 className="size-10" />
+            <BookLatchMark className="size-11" />
           </div>
         </div>
 

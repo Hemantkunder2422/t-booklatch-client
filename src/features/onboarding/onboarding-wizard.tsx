@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { BookLatchMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { sleep } from "@/lib/utils";
@@ -140,7 +141,7 @@ export function OnboardingWizard() {
           <div className="relative space-y-12">
             <div className="flex items-center gap-2.5">
               <div className="flex size-9 items-center justify-center rounded-lg bg-white/15 ring-1 ring-white/25">
-                <Building2 className="size-5" />
+                <BookLatchMark className="size-5.5" />
               </div>
               <span className="font-semibold tracking-tight">BookLatch</span>
             </div>

@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { BookLatchLogo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -50,12 +51,7 @@ export function LoginForm() {
   return (
     <div className="w-full max-w-sm space-y-8">
       {/* Mobile brand mark */}
-      <div className="flex items-center gap-2.5 lg:hidden">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-linear-to-br from-primary to-chart-4 text-primary-foreground">
-          <Lock className="size-4.5" />
-        </div>
-        <span className="font-semibold tracking-tight">BookLatch</span>
-      </div>
+      <BookLatchLogo className="lg:hidden" textClassName="text-base" />
 
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>

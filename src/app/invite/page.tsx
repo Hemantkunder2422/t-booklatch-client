@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Building2 } from "lucide-react";
+import { BookLatchLogo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AcceptInvite } from "@/features/invite/accept-invite";
 
@@ -36,12 +36,7 @@ export default async function InvitePage({
 
       {/* Top bar */}
       <header className="flex items-center justify-between px-6 py-5">
-        <div className="flex items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-lg bg-linear-to-br from-primary to-chart-4 text-primary-foreground shadow-sm">
-            <Building2 className="size-5" />
-          </div>
-          <span className="font-semibold tracking-tight">BookLatch</span>
-        </div>
+        <BookLatchLogo textClassName="text-base" />
         <ThemeToggle />
       </header>
 

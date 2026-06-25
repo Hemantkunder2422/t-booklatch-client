@@ -1,4 +1,5 @@
-import { Building2, CalendarCheck, ShieldCheck, Sparkles } from "lucide-react";
+import { CalendarCheck, ShieldCheck, Sparkles } from "lucide-react";
+import { BookLatchMark } from "@/components/brand/logo";
 
 const HIGHLIGHTS = [
   {
@@ -37,7 +38,7 @@ export function LoginBrandPanel() {
       {/* Brand */}
       <div className="relative flex items-center gap-2.5">
         <div className="flex size-10 items-center justify-center rounded-xl bg-white/15 ring-1 ring-white/25 backdrop-blur">
-          <Building2 className="size-5" />
+          <BookLatchMark className="size-6" />
         </div>
         <span className="text-lg font-semibold tracking-tight">BookLatch</span>
       </div>
