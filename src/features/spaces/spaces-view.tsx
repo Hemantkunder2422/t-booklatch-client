@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { DoorOpen, Pencil, Plus, Users } from "lucide-react";
+import { DoorOpen, ImageIcon, Pencil, Plus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -25,113 +25,98 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { cn, formatCurrency, getInitials } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
+import { cn, getInitials } from "@/lib/utils";
+import type { VenueSpace } from "@/types/models";
 
-type SpaceStatus = "active" | "maintenance" | "draft";
+const SLOT_TOGGLES = [
+  { key: "morningSlotEnabled", label: "Morning" },
+  { key: "eveningSlotEnabled", label: "Evening" },
+  { key: "fullDaySlotEnabled", label: "Full day" },
+] as const;
 
-interface Space {
-  id: string;
-  name: string;
-  type: string;
-  capacity: string;
-  price: string;
-  status: SpaceStatus;
-}
-
-const SPACE_TYPES = [
-  "Ballroom",
-  "Conference",
-  "Garden",
-  "Rooftop",
-  "Lounge",
-  "Dining",
-];
-
-const STATUS_META: Record<SpaceStatus, { label: string; className: string }> = {
-  active: { label: "Active", className: "bg-success/15 text-success" },
-  maintenance: {
-    label: "Maintenance",
-    className: "bg-warning/15 text-warning-foreground dark:text-warning",
-  },
-  draft: { label: "Draft", className: "bg-muted text-muted-foreground" },
-};
-
-const INITIAL: Space[] = [
+const INITIAL: VenueSpace[] = [
   {
     id: "sp-1",
+    venueId: "v-1",
     name: "Grand Atrium Hall",
-    type: "Ballroom",
-    capacity: "850",
-    price: "4200",
-    status: "active",
+    description: "A soaring glass atrium for weddings and galas.",
+    morningSlotEnabled: true,
+    eveningSlotEnabled: true,
+    fullDaySlotEnabled: true,
+    pax: 850,
+    gallery: ["1", "2", "3"],
   },
   {
     id: "sp-2",
+    venueId: "v-1",
     name: "Riverside Pavilion",
-    type: "Garden",
-    capacity: "320",
-    price: "1900",
-    status: "active",
+    description: "Open-air pavilion overlooking the river.",
+    morningSlotEnabled: true,
+    eveningSlotEnabled: true,
+    fullDaySlotEnabled: false,
+    pax: 320,
+    gallery: ["1", "2"],
   },
   {
     id: "sp-3",
+    venueId: "v-1",
     name: "The Glasshouse Loft",
-    type: "Lounge",
-    capacity: "140",
-    price: "2600",
-    status: "maintenance",
-  },
-  {
-    id: "sp-4",
-    name: "Skyline Rooftop",
-    type: "Rooftop",
-    capacity: "200",
-    price: "3100",
-    status: "draft",
+    description: "An intimate loft with skyline views.",
+    morningSlotEnabled: false,
+    eveningSlotEnabled: true,
+    fullDaySlotEnabled: true,
+    pax: 140,
+    gallery: [],
   },
 ];
 
 const spaceSchema = z.object({
   name: z.string().trim().min(2, "Space name is required"),
-  type: z.string().min(1, "Choose a type"),
-  capacity: z.string().trim().min(1, "Add a capacity"),
-  price: z.string().trim().min(1, "Add a price"),
-  status: z.enum(["active", "maintenance", "draft"]),
+  description: z.string().trim().min(1, "Add a short description"),
+  pax: z.string().trim().min(1, "Add a capacity"),
+  morningSlotEnabled: z.boolean(),
+  eveningSlotEnabled: z.boolean(),
+  fullDaySlotEnabled: z.boolean(),
 });
 type SpaceValues = z.infer<typeof spaceSchema>;
 
-let spaceCounter = 5;
+let spaceCounter = 4;
 
 export function SpacesView() {
-  const [spaces, setSpaces] = useState<Space[]>(INITIAL);
+  const [spaces, setSpaces] = useState<VenueSpace[]>(INITIAL);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Space | null>(null);
+  const [editing, setEditing] = useState<VenueSpace | null>(null);
 
   function openAdd() {
     setEditing(null);
     setDialogOpen(true);
   }
-  function openEdit(space: Space) {
+  function openEdit(space: VenueSpace) {
     setEditing(space);
     setDialogOpen(true);
   }
 
   function handleSubmit(values: SpaceValues) {
+    const pax = Number(values.pax.replace(/[^0-9]/g, "")) || 0;
     if (editing) {
       setSpaces((prev) =>
-        prev.map((s) => (s.id === editing.id ? { ...s, ...values } : s)),
+        prev.map((s) =>
+          s.id === editing.id ? { ...s, ...values, pax } : s,
+        ),
       );
       toast.success("Space updated", { description: values.name });
     } else {
       setSpaces((prev) => [
-        { id: `sp-${spaceCounter++}`, ...values },
+        {
+          id: `sp-${spaceCounter++}`,
+          venueId: "v-1",
+          gallery: [],
+          ...values,
+          pax,
+        },
         ...prev,
       ]);
       toast.success("Space added", { description: values.name });
@@ -162,32 +147,40 @@ export function SpacesView() {
                 <div className="flex size-11 items-center justify-center rounded-xl bg-linear-to-br from-primary to-chart-4 text-sm font-semibold text-primary-foreground">
                   {getInitials(space.name)}
                 </div>
-                <span
-                  className={cn(
-                    "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                    STATUS_META[space.status].className,
-                  )}
-                >
-                  {STATUS_META[space.status].label}
+                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                  <ImageIcon className="size-3.5" />
+                  {space.gallery.length}
                 </span>
               </div>
-              <div className="mt-3 space-y-0.5">
+              <div className="mt-3 space-y-1">
                 <h3 className="font-semibold leading-tight">{space.name}</h3>
-                <p className="text-sm text-muted-foreground">{space.type}</p>
+                <p className="line-clamp-2 text-sm text-muted-foreground">
+                  {space.description}
+                </p>
               </div>
             </CardHeader>
-            <CardContent className="flex-1">
-              <div className="flex items-center justify-between border-t pt-4 text-sm">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  <Users className="size-4" />
-                  {Number(space.capacity).toLocaleString()}
-                </span>
-                <span className="font-semibold">
-                  {formatCurrency(Number(space.price))}
-                  <span className="text-xs font-normal text-muted-foreground">
-                    /day
-                  </span>
-                </span>
+            <CardContent className="flex-1 space-y-3">
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Users className="size-4" />
+                Up to {space.pax.toLocaleString()} guests
+              </div>
+              <div className="flex flex-wrap gap-1.5 border-t pt-3">
+                {SLOT_TOGGLES.map((slot) => {
+                  const on = space[slot.key];
+                  return (
+                    <span
+                      key={slot.key}
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-xs font-medium",
+                        on
+                          ? "bg-success/15 text-success"
+                          : "bg-muted text-muted-foreground line-through",
+                      )}
+                    >
+                      {slot.label}
+                    </span>
+                  );
+                })}
               </div>
             </CardContent>
             <CardFooter>
@@ -204,7 +197,6 @@ export function SpacesView() {
           </Card>
         ))}
 
-        {/* Add tile */}
         <button
           type="button"
           onClick={openAdd}
@@ -235,38 +227,40 @@ function SpaceFormDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editing: Space | null;
+  editing: VenueSpace | null;
   onSubmit: (values: SpaceValues) => void;
 }) {
   const form = useForm<SpaceValues>({
     resolver: zodResolver(spaceSchema),
     defaultValues: {
       name: "",
-      type: "",
-      capacity: "",
-      price: "",
-      status: "active",
+      description: "",
+      pax: "",
+      morningSlotEnabled: true,
+      eveningSlotEnabled: true,
+      fullDaySlotEnabled: true,
     },
   });
 
-  // Sync form with the space being edited whenever the dialog opens.
   useEffect(() => {
     if (open) {
       form.reset(
         editing
           ? {
               name: editing.name,
-              type: editing.type,
-              capacity: editing.capacity,
-              price: editing.price,
-              status: editing.status,
+              description: editing.description,
+              pax: String(editing.pax),
+              morningSlotEnabled: editing.morningSlotEnabled,
+              eveningSlotEnabled: editing.eveningSlotEnabled,
+              fullDaySlotEnabled: editing.fullDaySlotEnabled,
             }
           : {
               name: "",
-              type: "",
-              capacity: "",
-              price: "",
-              status: "active",
+              description: "",
+              pax: "",
+              morningSlotEnabled: true,
+              eveningSlotEnabled: true,
+              fullDaySlotEnabled: true,
             },
       );
     }
@@ -304,92 +298,67 @@ function SpaceFormDialog({
             />
             <FormField
               control={form.control}
-              name="type"
+              name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Type</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {SPACE_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      rows={2}
+                      placeholder="What makes this space special…"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="capacity"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Capacity</FormLabel>
-                    <FormControl>
-                      <Input
-                        inputMode="numeric"
-                        placeholder="200"
-                        {...field}
-                        onChange={(e) =>
-                          field.onChange(e.target.value.replace(/[^0-9]/g, ""))
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price / day</FormLabel>
-                    <FormControl>
-                      <Input
-                        inputMode="numeric"
-                        placeholder="2500"
-                        {...field}
-                        onChange={(e) =>
-                          field.onChange(e.target.value.replace(/[^0-9]/g, ""))
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
             <FormField
               control={form.control}
-              name="status"
+              name="pax"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="maintenance">Maintenance</SelectItem>
-                      <SelectItem value="draft">Draft</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Capacity (pax)</FormLabel>
+                  <FormControl>
+                    <Input
+                      inputMode="numeric"
+                      placeholder="200"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(e.target.value.replace(/[^0-9]/g, ""))
+                      }
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            <div className="space-y-2">
+              <Label>Available slots</Label>
+              <div className="divide-y rounded-xl border">
+                {SLOT_TOGGLES.map((slot) => (
+                  <FormField
+                    key={slot.key}
+                    control={form.control}
+                    name={slot.key}
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between gap-3 p-3">
+                        <FormLabel className="font-normal">
+                          {slot.label} slot
+                        </FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
           </form>
         </Form>
         <DialogFooter>

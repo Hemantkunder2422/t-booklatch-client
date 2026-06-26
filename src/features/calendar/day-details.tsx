@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatCurrency } from "@/lib/utils";
+import { BOOKING_SLOT_LABELS } from "@/types/models";
 import { STATUS_META, type CalendarEvent } from "./types";
 
 export function DayDetails({
@@ -95,7 +96,7 @@ export function DayDetails({
                     {event.booking.space}
                   </DetailRow>
                   <DetailRow icon={<CalendarClock className="size-3.5" />}>
-                    {event.booking.time}
+                    {BOOKING_SLOT_LABELS[event.booking.slot]}
                   </DetailRow>
                   {event.booking.amount != null && (
                     <p className="pt-1 text-sm font-semibold text-foreground">

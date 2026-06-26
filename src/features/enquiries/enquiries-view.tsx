@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarClock, DoorOpen, Mail, Phone, Search } from "lucide-react";
+import { CalendarClock, DoorOpen, Mail, Phone, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 import {
   Avatar,
@@ -27,83 +27,108 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn, formatDate, getInitials } from "@/lib/utils";
-
-type EnquiryStatus = "new" | "contacted" | "converted" | "closed";
+import {
+  BOOKING_SLOT_LABELS,
+  BOOKING_SOURCE_LABELS,
+  ENQUIRY_STATUS_LABELS,
+  EVENT_TYPE_LABELS,
+  type BookingSlot,
+  type BookingSource,
+  type EnquiryStatus,
+  type EventType,
+} from "@/types/models";
 
 interface Enquiry {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
-  eventType: string;
-  space: string;
-  preferredDate: string;
-  receivedAt: string;
+  venueSpaceName: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  eventName?: string;
+  eventType?: EventType;
+  bookingDate: string;
+  slot: BookingSlot;
   status: EnquiryStatus;
-  message: string;
+  source: BookingSource;
+  pax?: number;
+  notes?: string;
+  createdAt: string;
 }
 
-const STATUS_META: Record<EnquiryStatus, { label: string; className: string }> =
-  {
-    new: { label: "New", className: "bg-primary/15 text-primary" },
-    contacted: {
-      label: "Contacted",
-      className: "bg-warning/15 text-warning-foreground dark:text-warning",
-    },
-    converted: { label: "Converted", className: "bg-success/15 text-success" },
-    closed: { label: "Closed", className: "bg-muted text-muted-foreground" },
-  };
+const STATUS_STYLE: Record<EnquiryStatus, string> = {
+  NEW: "bg-primary/15 text-primary",
+  CONTACTED: "bg-warning/15 text-warning-foreground dark:text-warning",
+  FOLLOW_UP: "bg-chart-3/15 text-chart-3",
+  CONVERTED: "bg-success/15 text-success",
+  CLOSED: "bg-muted text-muted-foreground",
+};
 
 const INITIAL: Enquiry[] = [
   {
     id: "EN-318",
-    name: "Hannah Brooks",
-    email: "hannah.brooks@gmail.com",
-    phone: "+14155550123",
-    eventType: "Wedding reception",
-    space: "Grand Atrium Hall",
-    preferredDate: "2026-09-12",
-    receivedAt: "2026-06-21",
-    status: "new",
-    message:
+    venueSpaceName: "Grand Atrium Hall",
+    customerName: "Hannah Brooks",
+    customerPhone: "+14155550123",
+    customerEmail: "hannah.brooks@gmail.com",
+    eventName: "Brooks Wedding",
+    eventType: "WEDDING",
+    bookingDate: "2026-09-12",
+    slot: "EVENING",
+    status: "NEW",
+    source: "CUSTOMER_APP",
+    pax: 160,
+    createdAt: "2026-06-21",
+    notes:
       "Hi! We're planning a wedding for ~160 guests and loved the Atrium photos. Is it available in September, and what's included for catering?",
   },
   {
     id: "EN-317",
-    name: "Theo Lambert",
-    email: "theo@brightlabs.io",
-    phone: "+14155550199",
-    eventType: "Corporate offsite",
-    space: "Riverside Pavilion",
-    preferredDate: "2026-07-30",
-    receivedAt: "2026-06-20",
-    status: "contacted",
-    message:
+    venueSpaceName: "Riverside Pavilion",
+    customerName: "Theo Lambert",
+    customerPhone: "+14155550199",
+    customerEmail: "theo@brightlabs.io",
+    eventName: "Bright Labs Offsite",
+    eventType: "CORPORATE",
+    bookingDate: "2026-07-30",
+    slot: "FULL_DAY",
+    status: "CONTACTED",
+    source: "PHONE",
+    pax: 40,
+    createdAt: "2026-06-20",
+    notes:
       "Looking for a full-day offsite for 40 people with AV and lunch. Could you share pricing?",
   },
   {
     id: "EN-316",
-    name: "Maria Santos",
-    email: "maria.santos@outlook.com",
-    phone: "+14155550110",
-    eventType: "Birthday party",
-    space: "Skyline Rooftop",
-    preferredDate: "2026-08-02",
-    receivedAt: "2026-06-18",
-    status: "converted",
-    message: "Rooftop for a 30th birthday, ~50 guests, evening preferred.",
+    venueSpaceName: "Skyline Rooftop",
+    customerName: "Maria Santos",
+    customerPhone: "+14155550110",
+    customerEmail: "maria.santos@outlook.com",
+    eventName: "30th Birthday",
+    eventType: "BIRTHDAY",
+    bookingDate: "2026-08-02",
+    slot: "EVENING",
+    status: "FOLLOW_UP",
+    source: "WHATSAPP",
+    pax: 50,
+    createdAt: "2026-06-18",
+    notes: "Rooftop for a 30th birthday, ~50 guests, evening preferred.",
   },
   {
     id: "EN-315",
-    name: "Greg Maddox",
-    email: "greg@maddoxco.com",
-    phone: "+14155550144",
-    eventType: "Product launch",
-    space: "The Glasshouse Loft",
-    preferredDate: "2026-07-15",
-    receivedAt: "2026-06-15",
-    status: "closed",
-    message: "Needed a launch venue but we've gone another direction. Thanks!",
+    venueSpaceName: "The Glasshouse Loft",
+    customerName: "Greg Maddox",
+    customerPhone: "+14155550144",
+    customerEmail: "greg@maddoxco.com",
+    eventName: "Product Launch",
+    eventType: "CORPORATE",
+    bookingDate: "2026-07-15",
+    slot: "EVENING",
+    status: "CLOSED",
+    source: "INTERNAL",
+    pax: 90,
+    createdAt: "2026-06-15",
+    notes: "Needed a launch venue but we've gone another direction. Thanks!",
   },
 ];
 
@@ -112,22 +137,25 @@ export function EnquiriesView() {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<Enquiry | null>(null);
 
-  const counts = useMemo(() => {
-    return {
-      new: enquiries.filter((e) => e.status === "new").length,
-      contacted: enquiries.filter((e) => e.status === "contacted").length,
-      converted: enquiries.filter((e) => e.status === "converted").length,
-    };
-  }, [enquiries]);
+  const counts = useMemo(
+    () => ({
+      new: enquiries.filter((e) => e.status === "NEW").length,
+      followUp: enquiries.filter((e) => e.status === "FOLLOW_UP").length,
+      converted: enquiries.filter((e) => e.status === "CONVERTED").length,
+    }),
+    [enquiries],
+  );
 
   const filtered = useMemo(
     () =>
-      enquiries.filter(
-        (e) =>
-          e.name.toLowerCase().includes(query.toLowerCase()) ||
-          e.eventType.toLowerCase().includes(query.toLowerCase()) ||
-          e.space.toLowerCase().includes(query.toLowerCase()),
-      ),
+      enquiries.filter((e) => {
+        const q = query.toLowerCase();
+        return (
+          e.customerName.toLowerCase().includes(q) ||
+          (e.eventName?.toLowerCase().includes(q) ?? false) ||
+          e.venueSpaceName.toLowerCase().includes(q)
+        );
+      }),
     [enquiries, query],
   );
 
@@ -147,13 +175,12 @@ export function EnquiriesView() {
         </p>
       </div>
 
-      {/* Summary */}
       <div className="grid gap-4 sm:grid-cols-3">
         <SummaryCard label="New" value={counts.new} className="text-primary" />
         <SummaryCard
-          label="Contacted"
-          value={counts.contacted}
-          className="text-warning-foreground dark:text-warning"
+          label="Follow-up"
+          value={counts.followUp}
+          className="text-chart-3"
         />
         <SummaryCard
           label="Converted"
@@ -162,7 +189,6 @@ export function EnquiriesView() {
         />
       </div>
 
-      {/* Search */}
       <div className="relative max-w-sm">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -173,7 +199,6 @@ export function EnquiriesView() {
         />
       </div>
 
-      {/* Table */}
       <div className="overflow-hidden rounded-xl border">
         <Table>
           <TableHeader>
@@ -181,7 +206,7 @@ export function EnquiriesView() {
               <TableHead>From</TableHead>
               <TableHead className="hidden md:table-cell">Event</TableHead>
               <TableHead className="hidden lg:table-cell">
-                Preferred date
+                Date · Slot
               </TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
@@ -197,31 +222,36 @@ export function EnquiriesView() {
                   <div className="flex items-center gap-3">
                     <Avatar className="size-9">
                       <AvatarFallback className="bg-muted text-xs font-medium">
-                        {getInitials(enquiry.name)}
+                        {getInitials(enquiry.customerName)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{enquiry.name}</p>
+                      <p className="truncate font-medium">
+                        {enquiry.customerName}
+                      </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {enquiry.space}
+                        {enquiry.venueSpaceName}
                       </p>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell className="hidden text-sm md:table-cell">
-                  {enquiry.eventType}
+                  {enquiry.eventType
+                    ? EVENT_TYPE_LABELS[enquiry.eventType]
+                    : "—"}
                 </TableCell>
                 <TableCell className="hidden text-sm lg:table-cell">
-                  {formatDate(enquiry.preferredDate)}
+                  {formatDate(enquiry.bookingDate)} ·{" "}
+                  {BOOKING_SLOT_LABELS[enquiry.slot]}
                 </TableCell>
                 <TableCell>
                   <span
                     className={cn(
                       "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                      STATUS_META[enquiry.status].className,
+                      STATUS_STYLE[enquiry.status],
                     )}
                   >
-                    {STATUS_META[enquiry.status].label}
+                    {ENQUIRY_STATUS_LABELS[enquiry.status]}
                   </span>
                 </TableCell>
               </TableRow>
@@ -274,45 +304,58 @@ function EnquiryDialog({
           <>
             <DialogHeader>
               <div className="flex items-center justify-between gap-3">
-                <DialogTitle>{enquiry.name}</DialogTitle>
+                <DialogTitle>{enquiry.customerName}</DialogTitle>
                 <span
                   className={cn(
                     "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                    STATUS_META[enquiry.status].className,
+                    STATUS_STYLE[enquiry.status],
                   )}
                 >
-                  {STATUS_META[enquiry.status].label}
+                  {ENQUIRY_STATUS_LABELS[enquiry.status]}
                 </span>
               </div>
               <DialogDescription>
-                {enquiry.eventType} · received {formatDate(enquiry.receivedAt)}
+                {enquiry.eventName ?? "Enquiry"} · received{" "}
+                {formatDate(enquiry.createdAt)} ·{" "}
+                {BOOKING_SOURCE_LABELS[enquiry.source]}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-3">
                 <Meta icon={<DoorOpen className="size-4" />} label="Space">
-                  {enquiry.space}
+                  {enquiry.venueSpaceName}
                 </Meta>
                 <Meta
                   icon={<CalendarClock className="size-4" />}
                   label="Preferred"
                 >
-                  {formatDate(enquiry.preferredDate)}
+                  {formatDate(enquiry.bookingDate)} ·{" "}
+                  {BOOKING_SLOT_LABELS[enquiry.slot]}
+                </Meta>
+                <Meta icon={<Users className="size-4" />} label="Guests">
+                  {enquiry.pax ?? "—"}
+                </Meta>
+                <Meta icon={<Phone className="size-4" />} label="Phone">
+                  {enquiry.customerPhone}
                 </Meta>
               </div>
-              <p className="rounded-lg bg-muted/50 p-3 text-muted-foreground">
-                {enquiry.message}
-              </p>
+              {enquiry.notes && (
+                <p className="rounded-lg bg-muted/50 p-3 text-muted-foreground">
+                  {enquiry.notes}
+                </p>
+              )}
               <div className="flex flex-wrap gap-2">
+                {enquiry.customerEmail && (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`mailto:${enquiry.customerEmail}`}>
+                      <Mail className="size-4" />
+                      Reply
+                    </a>
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" asChild>
-                  <a href={`mailto:${enquiry.email}`}>
-                    <Mail className="size-4" />
-                    Reply
-                  </a>
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <a href={`tel:${enquiry.phone}`}>
+                  <a href={`tel:${enquiry.customerPhone}`}>
                     <Phone className="size-4" />
                     Call
                   </a>
@@ -324,14 +367,14 @@ function EnquiryDialog({
               <Button
                 variant="outline"
                 className="sm:flex-1"
-                onClick={() => onSetStatus(enquiry.id, "contacted")}
+                onClick={() => onSetStatus(enquiry.id, "FOLLOW_UP")}
               >
-                Mark contacted
+                Mark follow-up
               </Button>
               <Button
                 className="sm:flex-1"
                 onClick={() => {
-                  onSetStatus(enquiry.id, "converted");
+                  onSetStatus(enquiry.id, "CONVERTED");
                   toast.success("Enquiry converted", {
                     description: "Create a booking to finish.",
                   });

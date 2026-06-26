@@ -13,12 +13,15 @@ import {
   CreditCard,
   DoorOpen,
   FileText,
+  Mail,
+  Phone,
   Plus,
   Printer,
   Receipt,
   Search,
   Smartphone,
   User,
+  Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -61,8 +64,17 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import {
+  BOOKING_SLOT_LABELS,
+  BOOKING_SOURCE_LABELS,
+  BOOKING_STATUS_LABELS,
+  EVENT_TYPE_LABELS,
+  type BookingSlot,
+  type BookingSource,
+  type BookingStatus,
+  type EventType,
+} from "@/types/models";
 
-type BookingStatus = "confirmed" | "pending" | "cancelled";
 type PayMethod = "UPI" | "Card" | "Cash" | "Bank transfer";
 
 interface Payment {
@@ -74,22 +86,30 @@ interface Payment {
 
 interface Booking {
   id: string;
-  customer: string;
-  space: string;
-  date: string;
-  time: string;
+  venueSpaceId: string;
+  venueSpaceName: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  eventName: string;
+  eventType: EventType;
+  bookingDate: string;
+  slot: BookingSlot;
+  bookingStatus: BookingStatus;
+  source: BookingSource;
+  pax: number;
+  notes?: string;
+  // UI-only payment extras (no backend model yet)
   amount: number;
-  status: BookingStatus;
   payments: Payment[];
   invoiceId?: string;
-  notes?: string;
 }
 
 const SPACES = [
-  "Grand Atrium Hall",
-  "Riverside Pavilion",
-  "The Glasshouse Loft",
-  "Skyline Rooftop",
+  { id: "sp-1", name: "Grand Atrium Hall" },
+  { id: "sp-2", name: "Riverside Pavilion" },
+  { id: "sp-3", name: "The Glasshouse Loft" },
+  { id: "sp-4", name: "Skyline Rooftop" },
 ];
 
 const DEPOSIT_PCT = 25;
@@ -101,10 +121,11 @@ const PAY_METHODS: { value: PayMethod; icon: LucideIcon }[] = [
   { value: "Bank transfer", icon: Building2 },
 ];
 
-const STATUS: Record<BookingStatus, string> = {
-  confirmed: "bg-success/15 text-success",
-  pending: "bg-warning/15 text-warning-foreground dark:text-warning",
-  cancelled: "bg-destructive/10 text-destructive",
+const STATUS_STYLE: Record<BookingStatus, string> = {
+  CONFIRMED: "bg-success/15 text-success",
+  PENDING: "bg-warning/15 text-warning-foreground dark:text-warning",
+  CANCELLED: "bg-destructive/10 text-destructive",
+  COMPLETED: "bg-primary/15 text-primary",
 };
 
 const paidOf = (b: Booking) => b.payments.reduce((s, p) => s + p.amount, 0);
@@ -113,20 +134,31 @@ function payStatus(b: Booking): { label: string; className: string } {
   const paid = paidOf(b);
   if (b.invoiceId || paid >= b.amount)
     return { label: "Paid", className: "text-success" };
-  if (paid > 0) return { label: "Advance paid", className: "text-warning-foreground dark:text-warning" };
+  if (paid > 0)
+    return {
+      label: "Advance paid",
+      className: "text-warning-foreground dark:text-warning",
+    };
   return { label: "Unpaid", className: "text-muted-foreground" };
 }
 
 const INITIAL: Booking[] = [
   {
     id: "BK-2041",
-    customer: "Olivia Bennett",
-    space: "Grand Atrium Hall",
-    date: "2026-06-28",
-    time: "4:00 PM – 11:00 PM",
-    amount: 4200,
-    status: "confirmed",
+    venueSpaceId: "sp-1",
+    venueSpaceName: "Grand Atrium Hall",
+    customerName: "Olivia Bennett",
+    customerPhone: "+14155550148",
+    customerEmail: "olivia.bennett@gmail.com",
+    eventName: "Bennett–Cole Wedding",
+    eventType: "WEDDING",
+    bookingDate: "2026-06-28",
+    slot: "EVENING",
+    bookingStatus: "CONFIRMED",
+    source: "INTERNAL",
+    pax: 180,
     notes: "Plated dinner for 180.",
+    amount: 4200,
     invoiceId: "INV-1043",
     payments: [
       { id: "RCPT-5012", amount: 1050, method: "UPI", date: "2026-06-10" },
@@ -135,35 +167,59 @@ const INITIAL: Booking[] = [
   },
   {
     id: "BK-2040",
-    customer: "Marcus Reid",
-    space: "Riverside Pavilion",
-    date: "2026-06-27",
-    time: "9:00 AM – 5:00 PM",
+    venueSpaceId: "sp-2",
+    venueSpaceName: "Riverside Pavilion",
+    customerName: "Marcus Reid",
+    customerPhone: "+14155550172",
+    customerEmail: "marcus@northwind.io",
+    eventName: "Northwind Offsite",
+    eventType: "CORPORATE",
+    bookingDate: "2026-06-27",
+    slot: "MORNING",
+    bookingStatus: "CONFIRMED",
+    source: "PHONE",
+    pax: 40,
     amount: 1900,
-    status: "confirmed",
     payments: [
       { id: "RCPT-5021", amount: 475, method: "UPI", date: "2026-06-18" },
     ],
   },
   {
     id: "BK-2039",
-    customer: "Priya Nair",
-    space: "The Glasshouse Loft",
-    date: "2026-06-25",
-    time: "6:00 PM – 12:00 AM",
+    venueSpaceId: "sp-3",
+    venueSpaceName: "The Glasshouse Loft",
+    customerName: "Priya Nair",
+    customerPhone: "+14155550110",
+    customerEmail: "priya.nair@aurora.org",
+    eventName: "Aurora Foundation Gala",
+    eventType: "RECEPTION",
+    bookingDate: "2026-06-25",
+    slot: "EVENING",
+    bookingStatus: "PENDING",
+    source: "WHATSAPP",
+    pax: 120,
     amount: 2600,
-    status: "pending",
     payments: [],
   },
 ];
 
+const EVENT_TYPES = Object.keys(EVENT_TYPE_LABELS) as EventType[];
+const SLOTS = Object.keys(BOOKING_SLOT_LABELS) as BookingSlot[];
+const SOURCES = Object.keys(BOOKING_SOURCE_LABELS) as BookingSource[];
+
 const bookingSchema = z.object({
-  customer: z.string().trim().min(2, "Customer name is required"),
-  space: z.string().min(1, "Select a space"),
-  date: z.string().min(1, "Pick a date"),
-  time: z.string().trim().min(1, "Add a time range"),
-  amount: z.string().trim().min(1, "Add an amount"),
-  status: z.enum(["confirmed", "pending", "cancelled"]),
+  customerName: z.string().trim().min(2, "Customer name is required"),
+  customerPhone: z.string().trim().min(1, "Phone is required"),
+  customerEmail: z.string().min(1, "Email is required").email("Enter a valid email"),
+  venueSpaceId: z.string().min(1, "Select a space"),
+  eventName: z.string().trim().min(1, "Add an event name"),
+  eventType: z.enum(["WEDDING", "BIRTHDAY", "RECEPTION", "CORPORATE", "OTHERS"]),
+  bookingDate: z.string().min(1, "Pick a date"),
+  slot: z.enum(["MORNING", "EVENING", "FULL_DAY"]),
+  pax: z.string().trim().min(1, "Add guest count"),
+  amount: z.string().optional().or(z.literal("")),
+  source: z.enum(["INTERNAL", "PHONE", "WHATSAPP", "CUSTOMER_APP"]),
+  bookingStatus: z.enum(["PENDING", "CONFIRMED", "CANCELLED", "COMPLETED"]),
   notes: z.string().optional().or(z.literal("")),
 });
 type BookingValues = z.infer<typeof bookingSchema>;
@@ -188,27 +244,37 @@ export function BookingsView() {
   const filtered = useMemo(
     () =>
       bookings.filter((b) => {
+        const q = query.toLowerCase();
         const matchesQuery =
-          b.customer.toLowerCase().includes(query.toLowerCase()) ||
-          b.space.toLowerCase().includes(query.toLowerCase()) ||
-          b.id.toLowerCase().includes(query.toLowerCase());
+          b.customerName.toLowerCase().includes(q) ||
+          b.venueSpaceName.toLowerCase().includes(q) ||
+          b.eventName.toLowerCase().includes(q) ||
+          b.id.toLowerCase().includes(q);
         const matchesStatus =
-          statusFilter === "all" || b.status === statusFilter;
+          statusFilter === "all" || b.bookingStatus === statusFilter;
         return matchesQuery && matchesStatus;
       }),
     [bookings, query, statusFilter],
   );
 
   function handleCreate(values: BookingValues) {
+    const space = SPACES.find((s) => s.id === values.venueSpaceId);
     const booking: Booking = {
       id: `BK-${bookingCounter++}`,
-      customer: values.customer,
-      space: values.space,
-      date: values.date,
-      time: values.time,
-      amount: Number(values.amount.replace(/[^0-9.]/g, "")) || 0,
-      status: values.status,
+      venueSpaceId: values.venueSpaceId,
+      venueSpaceName: space?.name ?? "",
+      customerName: values.customerName,
+      customerPhone: values.customerPhone,
+      customerEmail: values.customerEmail,
+      eventName: values.eventName,
+      eventType: values.eventType,
+      bookingDate: values.bookingDate,
+      slot: values.slot,
+      bookingStatus: values.bookingStatus,
+      source: values.source,
+      pax: Number(values.pax.replace(/[^0-9]/g, "")) || 0,
       notes: values.notes || undefined,
+      amount: Number(values.amount?.replace(/[^0-9.]/g, "")) || 0,
       payments: [],
     };
     setBookings((prev) => [booking, ...prev]);
@@ -227,8 +293,8 @@ export function BookingsView() {
     const paid = payments.reduce((s, p) => s + p.amount, 0);
 
     let invoiceId = booking.invoiceId;
-    let status = booking.status;
-    if (paid > 0 && status === "pending") status = "confirmed";
+    let bookingStatus = booking.bookingStatus;
+    if (paid > 0 && bookingStatus === "PENDING") bookingStatus = "CONFIRMED";
 
     let invoiceGenerated = false;
     if (paid >= booking.amount && !invoiceId) {
@@ -236,7 +302,7 @@ export function BookingsView() {
       invoiceGenerated = true;
     }
 
-    const updated: Booking = { ...booking, payments, invoiceId, status };
+    const updated: Booking = { ...booking, payments, invoiceId, bookingStatus };
     setBookings((prev) => prev.map((b) => (b.id === booking.id ? updated : b)));
     setView({ mode: "details", booking: updated });
 
@@ -270,7 +336,7 @@ export function BookingsView() {
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by customer, space, or ID…"
+            placeholder="Search by customer, space, event, or ID…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-9"
@@ -285,9 +351,11 @@ export function BookingsView() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="confirmed">Confirmed</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
+            {(Object.keys(BOOKING_STATUS_LABELS) as BookingStatus[]).map((s) => (
+              <SelectItem key={s} value={s}>
+                {BOOKING_STATUS_LABELS[s]}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -297,9 +365,9 @@ export function BookingsView() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40">
-              <TableHead>Booking</TableHead>
+              <TableHead>Customer / Event</TableHead>
               <TableHead className="hidden md:table-cell">Space</TableHead>
-              <TableHead className="hidden lg:table-cell">Date</TableHead>
+              <TableHead className="hidden lg:table-cell">Date · Slot</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
@@ -324,16 +392,17 @@ export function BookingsView() {
                     onClick={() => setView({ mode: "details", booking })}
                   >
                     <TableCell>
-                      <div className="font-medium">{booking.customer}</div>
+                      <div className="font-medium">{booking.customerName}</div>
                       <div className="text-xs text-muted-foreground">
-                        {booking.id}
+                        {booking.eventName} · {EVENT_TYPE_LABELS[booking.eventType]}
                       </div>
                     </TableCell>
                     <TableCell className="hidden text-sm md:table-cell">
-                      {booking.space}
+                      {booking.venueSpaceName}
                     </TableCell>
                     <TableCell className="hidden text-sm lg:table-cell">
-                      {formatDate(booking.date)}
+                      {formatDate(booking.bookingDate)} ·{" "}
+                      {BOOKING_SLOT_LABELS[booking.slot]}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="font-medium">
@@ -346,11 +415,11 @@ export function BookingsView() {
                     <TableCell>
                       <span
                         className={cn(
-                          "inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize",
-                          STATUS[booking.status],
+                          "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
+                          STATUS_STYLE[booking.bookingStatus],
                         )}
                       >
-                        {booking.status}
+                        {BOOKING_STATUS_LABELS[booking.bookingStatus]}
                       </span>
                     </TableCell>
                   </TableRow>
@@ -449,28 +518,39 @@ function DetailsView({
     <>
       <DialogHeader>
         <div className="flex items-center justify-between gap-3">
-          <DialogTitle>{booking.customer}</DialogTitle>
+          <DialogTitle>{booking.customerName}</DialogTitle>
           <span
             className={cn(
-              "inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize",
-              STATUS[booking.status],
+              "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
+              STATUS_STYLE[booking.bookingStatus],
             )}
           >
-            {booking.status}
+            {BOOKING_STATUS_LABELS[booking.bookingStatus]}
           </span>
         </div>
-        <DialogDescription>{booking.id}</DialogDescription>
+        <DialogDescription>
+          {booking.id} · {booking.eventName}
+        </DialogDescription>
       </DialogHeader>
 
       <div className="space-y-3 text-sm">
         <Row icon={<DoorOpen className="size-4" />} label="Space">
-          {booking.space}
+          {booking.venueSpaceName}
         </Row>
         <Row icon={<CalendarClock className="size-4" />} label="When">
-          {formatDate(booking.date)} · {booking.time}
+          {formatDate(booking.bookingDate)} · {BOOKING_SLOT_LABELS[booking.slot]}
         </Row>
-        <Row icon={<User className="size-4" />} label="Customer">
-          {booking.customer}
+        <Row icon={<Users className="size-4" />} label="Guests / Event type">
+          {booking.pax} · {EVENT_TYPE_LABELS[booking.eventType]}
+        </Row>
+        <Row icon={<Phone className="size-4" />} label="Phone">
+          {booking.customerPhone}
+        </Row>
+        <Row icon={<Mail className="size-4" />} label="Email">
+          {booking.customerEmail}
+        </Row>
+        <Row icon={<User className="size-4" />} label="Source">
+          {BOOKING_SOURCE_LABELS[booking.source]}
         </Row>
       </div>
 
@@ -589,7 +669,6 @@ function CollectView({
       </DialogHeader>
 
       <div className="space-y-4">
-        {/* Method */}
         <div className="space-y-2">
           <p className="text-sm font-medium">Payment method</p>
           <div className="grid grid-cols-2 gap-2">
@@ -620,7 +699,6 @@ function CollectView({
           </div>
         </div>
 
-        {/* Amount */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">Amount</p>
@@ -718,7 +796,6 @@ function DocumentView({
         <DialogDescription>{docId}</DialogDescription>
       </DialogHeader>
 
-      {/* Document body */}
       <div className="space-y-4 rounded-xl border p-4 text-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -734,14 +811,14 @@ function DocumentView({
         <div className="flex justify-between">
           <div>
             <p className="text-xs text-muted-foreground">Billed to</p>
-            <p className="font-medium">{booking.customer}</p>
+            <p className="font-medium">{booking.customerName}</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">
               {isReceipt ? "Received on" : "Space"}
             </p>
             <p className="font-medium">
-              {isReceipt ? formatDate(payment!.date) : booking.space}
+              {isReceipt ? formatDate(payment!.date) : booking.venueSpaceName}
             </p>
           </div>
         </div>
@@ -751,7 +828,7 @@ function DocumentView({
             <DocLine label="Booking total">
               {formatCurrency(booking.amount)}
             </DocLine>
-            <DocLine label={`Payment method`}>{payment!.method}</DocLine>
+            <DocLine label="Payment method">{payment!.method}</DocLine>
             <Separator />
             <DocLine label="Amount received" strong>
               {formatCurrency(payment!.amount)}
@@ -762,7 +839,7 @@ function DocumentView({
           </div>
         ) : (
           <div className="space-y-1.5">
-            <DocLine label={`${booking.space} — ${booking.time}`}>
+            <DocLine label={`${booking.eventName} — ${BOOKING_SLOT_LABELS[booking.slot]}`}>
               {formatCurrency(booking.amount)}
             </DocLine>
             {booking.payments.map((p) => (
@@ -855,12 +932,18 @@ function NewBookingDialog({
   const form = useForm<BookingValues>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
-      customer: "",
-      space: "",
-      date: "",
-      time: "",
+      customerName: "",
+      customerPhone: "",
+      customerEmail: "",
+      venueSpaceId: "",
+      eventName: "",
+      eventType: "WEDDING",
+      bookingDate: "",
+      slot: "EVENING",
+      pax: "",
       amount: "",
-      status: "pending",
+      source: "INTERNAL",
+      bookingStatus: "PENDING",
       notes: "",
     },
   });
@@ -879,7 +962,7 @@ function NewBookingDialog({
           New booking
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create booking</DialogTitle>
           <DialogDescription>
@@ -892,14 +975,42 @@ function NewBookingDialog({
             className="space-y-4"
             id="new-booking-form"
           >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="customerName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Full name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="customerPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+1 (555) 000-0000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
-              name="customer"
+              name="customerEmail"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Customer</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="Full name" {...field} />
+                    <Input type="email" placeholder="name@email.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -907,7 +1018,7 @@ function NewBookingDialog({
             />
             <FormField
               control={form.control}
-              name="space"
+              name="venueSpaceId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Space</FormLabel>
@@ -919,8 +1030,8 @@ function NewBookingDialog({
                     </FormControl>
                     <SelectContent>
                       {SPACES.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -932,7 +1043,46 @@ function NewBookingDialog({
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
-                name="date"
+                name="eventName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Event name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Smith Wedding" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="eventType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Event type</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {EVENT_TYPES.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {EVENT_TYPE_LABELS[t]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <FormField
+                control={form.control}
+                name="bookingDate"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Date</FormLabel>
@@ -945,19 +1095,50 @@ function NewBookingDialog({
               />
               <FormField
                 control={form.control}
-                name="time"
+                name="slot"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Time</FormLabel>
+                    <FormLabel>Slot</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {SLOTS.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {BOOKING_SLOT_LABELS[s]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="pax"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Guests</FormLabel>
                     <FormControl>
-                      <Input placeholder="4:00 PM – 11:00 PM" {...field} />
+                      <Input
+                        inputMode="numeric"
+                        placeholder="120"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(e.target.value.replace(/[^0-9]/g, ""))
+                        }
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <FormField
                 control={form.control}
                 name="amount"
@@ -979,7 +1160,31 @@ function NewBookingDialog({
               />
               <FormField
                 control={form.control}
-                name="status"
+                name="source"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Source</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {SOURCES.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {BOOKING_SOURCE_LABELS[s]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="bookingStatus"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
@@ -990,9 +1195,13 @@ function NewBookingDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="confirmed">Confirmed</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        {(Object.keys(BOOKING_STATUS_LABELS) as BookingStatus[]).map(
+                          (s) => (
+                            <SelectItem key={s} value={s}>
+                              {BOOKING_STATUS_LABELS[s]}
+                            </SelectItem>
+                          ),
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />

@@ -14,74 +14,68 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn, formatCurrency, formatDate, getInitials } from "@/lib/utils";
+import {
+  BOOKING_STATUS_LABELS,
+  type BookingStatus,
+} from "@/types/models";
 
-type BookingStatus = "confirmed" | "pending" | "cancelled";
-
-interface Booking {
+interface RecentBooking {
   id: string;
-  customer: string;
-  space: string;
-  date: string;
+  customerName: string;
+  venueSpaceName: string;
+  bookingDate: string;
   amount: number;
-  status: BookingStatus;
+  bookingStatus: BookingStatus;
 }
 
-const BOOKINGS: Booking[] = [
+const BOOKINGS: RecentBooking[] = [
   {
     id: "BK-2041",
-    customer: "Olivia Bennett",
-    space: "Grand Atrium Hall",
-    date: "2026-06-28",
+    customerName: "Olivia Bennett",
+    venueSpaceName: "Grand Atrium Hall",
+    bookingDate: "2026-06-28",
     amount: 4200,
-    status: "confirmed",
+    bookingStatus: "CONFIRMED",
   },
   {
     id: "BK-2040",
-    customer: "Marcus Reid",
-    space: "Riverside Pavilion",
-    date: "2026-06-27",
+    customerName: "Marcus Reid",
+    venueSpaceName: "Riverside Pavilion",
+    bookingDate: "2026-06-27",
     amount: 1900,
-    status: "pending",
+    bookingStatus: "PENDING",
   },
   {
     id: "BK-2039",
-    customer: "Priya Nair",
-    space: "The Glasshouse Loft",
-    date: "2026-06-25",
+    customerName: "Priya Nair",
+    venueSpaceName: "The Glasshouse Loft",
+    bookingDate: "2026-06-25",
     amount: 2600,
-    status: "confirmed",
+    bookingStatus: "CONFIRMED",
   },
   {
     id: "BK-2038",
-    customer: "Daniel Cho",
-    space: "Skyline Rooftop",
-    date: "2026-06-24",
+    customerName: "Daniel Cho",
+    venueSpaceName: "Skyline Rooftop",
+    bookingDate: "2026-06-24",
     amount: 3100,
-    status: "cancelled",
+    bookingStatus: "CANCELLED",
   },
   {
     id: "BK-2037",
-    customer: "Sofia Alvarez",
-    space: "Grand Atrium Hall",
-    date: "2026-06-22",
+    customerName: "Sofia Alvarez",
+    venueSpaceName: "Grand Atrium Hall",
+    bookingDate: "2026-06-22",
     amount: 4200,
-    status: "confirmed",
+    bookingStatus: "COMPLETED",
   },
 ];
 
-const STATUS: Record<BookingStatus, { label: string; className: string }> = {
-  confirmed: {
-    label: "Confirmed",
-    className: "bg-success/15 text-success",
-  },
-  pending: {
-    label: "Pending",
-    className: "bg-warning/15 text-warning-foreground dark:text-warning",
-  },
-  cancelled: {
-    label: "Cancelled",
-    className: "bg-destructive/10 text-destructive",
-  },
+const STATUS_STYLE: Record<BookingStatus, string> = {
+  CONFIRMED: "bg-success/15 text-success",
+  PENDING: "bg-warning/15 text-warning-foreground dark:text-warning",
+  CANCELLED: "bg-destructive/10 text-destructive",
+  COMPLETED: "bg-primary/15 text-primary",
 };
 
 export function RecentBookings() {
@@ -108,19 +102,19 @@ export function RecentBookings() {
             >
               <Avatar className="size-9">
                 <AvatarFallback className="bg-muted text-xs font-medium">
-                  {getInitials(booking.customer)}
+                  {getInitials(booking.customerName)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">
-                  {booking.customer}
+                  {booking.customerName}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {booking.space}
+                  {booking.venueSpaceName}
                 </p>
               </div>
               <div className="hidden text-right text-xs text-muted-foreground sm:block">
-                {formatDate(booking.date)}
+                {formatDate(booking.bookingDate)}
               </div>
               <div className="w-20 text-right text-sm font-medium">
                 {formatCurrency(booking.amount)}
@@ -128,10 +122,10 @@ export function RecentBookings() {
               <span
                 className={cn(
                   "hidden w-24 shrink-0 justify-center rounded-full px-2 py-0.5 text-center text-xs font-medium md:inline-flex",
-                  STATUS[booking.status].className,
+                  STATUS_STYLE[booking.bookingStatus],
                 )}
               >
-                {STATUS[booking.status].label}
+                {BOOKING_STATUS_LABELS[booking.bookingStatus]}
               </span>
             </div>
           ))}

@@ -9,8 +9,9 @@ export const SAMPLE_SPACES = [
 ];
 
 /**
- * Build a realistic spread of events for the given month and the next,
- * so the calendar always shows data near "today".
+ * Build a realistic spread of calendar entries for the given month and the
+ * next, so the calendar always shows data near "today". Status values mirror
+ * the Prisma `CalendarStatus` enum.
  */
 export function buildSampleEvents(base: Date): CalendarEvent[] {
   const forMonth = (monthDate: Date, salt: string): CalendarEvent[] => {
@@ -23,21 +24,23 @@ export function buildSampleEvents(base: Date): CalendarEvent[] {
       {
         id: id(1),
         date: k(3),
-        status: "booked",
+        slot: "EVENING",
+        status: "BOOKED",
         title: "Wedding — Olivia B.",
         space: "Grand Atrium Hall",
         note: "Plated dinner for 180. AV team arrives 2pm.",
         booking: {
           customer: "Olivia Bennett",
           space: "Grand Atrium Hall",
-          time: "4:00 PM – 11:00 PM",
+          slot: "EVENING",
           amount: 4200,
         },
       },
       {
         id: id(2),
         date: k(3),
-        status: "pending",
+        slot: "MORNING",
+        status: "BLOCKED",
         title: "Hold — Corporate offsite",
         space: "Riverside Pavilion",
         note: "Awaiting deposit from Northwind Inc.",
@@ -45,35 +48,39 @@ export function buildSampleEvents(base: Date): CalendarEvent[] {
       {
         id: id(3),
         date: k(8),
-        status: "booked",
+        slot: "FULL_DAY",
+        status: "BOOKED",
         title: "Conference — Northwind",
         space: "Riverside Pavilion",
         booking: {
           customer: "Marcus Reid",
           space: "Riverside Pavilion",
-          time: "9:00 AM – 5:00 PM",
+          slot: "FULL_DAY",
           amount: 1900,
         },
       },
       {
         id: id(4),
         date: k(12),
-        status: "available",
+        slot: "FULL_DAY",
+        status: "AVAILABLE",
         title: "Open for bookings",
         space: "The Glasshouse Loft",
       },
       {
         id: id(5),
         date: k(14),
-        status: "blocked",
-        title: "Maintenance",
+        slot: "FULL_DAY",
+        status: "MAINTENANCE",
+        title: "Floor refinishing",
         space: "Skyline Rooftop",
-        note: "Floor refinishing — no events.",
+        note: "No events — maintenance window.",
       },
       {
         id: id(6),
         date: k(17),
-        status: "pending",
+        slot: "EVENING",
+        status: "BLOCKED",
         title: "Hold — Birthday party",
         space: "The Glasshouse Loft",
         note: "Tentative, confirming headcount.",
@@ -81,41 +88,45 @@ export function buildSampleEvents(base: Date): CalendarEvent[] {
       {
         id: id(7),
         date: k(20),
-        status: "booked",
+        slot: "EVENING",
+        status: "BOOKED",
         title: "Gala — Aurora Foundation",
         space: "The Glasshouse Loft",
         note: "Black-tie. Valet required.",
         booking: {
           customer: "Priya Nair",
           space: "The Glasshouse Loft",
-          time: "6:00 PM – 12:00 AM",
+          slot: "EVENING",
           amount: 2600,
         },
       },
       {
         id: id(8),
         date: k(20),
-        status: "available",
+        slot: "MORNING",
+        status: "AVAILABLE",
         title: "Rooftop open",
         space: "Skyline Rooftop",
       },
       {
         id: id(9),
         date: k(24),
-        status: "booked",
+        slot: "EVENING",
+        status: "BOOKED",
         title: "Product launch",
         space: "Skyline Rooftop",
         booking: {
           customer: "Daniel Cho",
           space: "Skyline Rooftop",
-          time: "7:00 PM – 10:00 PM",
+          slot: "EVENING",
           amount: 3100,
         },
       },
       {
         id: id(10),
         date: k(27),
-        status: "pending",
+        slot: "MORNING",
+        status: "BLOCKED",
         title: "Hold — Workshop",
         space: "Grand Atrium Hall",
       },
