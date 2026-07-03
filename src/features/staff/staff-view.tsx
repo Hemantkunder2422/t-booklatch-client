@@ -20,14 +20,14 @@ import {
 } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -357,26 +357,27 @@ function AddStaffDialog({
   });
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(next) => {
         onOpenChange(next);
         if (!next) form.reset();
       }}
     >
-      <DialogTrigger asChild>
+      <SheetTrigger asChild>
         <Button className="gap-1.5">
           <Plus className="size-4" />
           Add staff
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add staff member</DialogTitle>
-          <DialogDescription>
+      </SheetTrigger>
+      <SheetContent className="w-full gap-0 sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>Add staff member</SheetTitle>
+          <SheetDescription>
             Invite a teammate and assign their role.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-4">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -435,12 +436,13 @@ function AddStaffDialog({
             />
           </form>
         </Form>
-        <DialogFooter>
+        </div>
+        <SheetFooter>
           <Button type="submit" form="staff-form">
             Send invite
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

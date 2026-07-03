@@ -1,21 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { DoorOpen, ImageIcon, Pencil, Plus, Users } from "lucide-react";
+import { ImageIcon, Pencil, Plus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Form,
   FormControl,
@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { cn, getInitials } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import type { VenueSpace } from "@/types/models";
 
 const SLOT_TOGGLES = [
@@ -36,6 +36,16 @@ const SLOT_TOGGLES = [
   { key: "eveningSlotEnabled", label: "Evening" },
   { key: "fullDaySlotEnabled", label: "Full day" },
 ] as const;
+
+// Gradient placeholders for gallery photos (swap for real `gallery` URLs later).
+const GRADIENTS = [
+  "bg-[linear-gradient(135deg,#6d5bf5,#b15bf0)]",
+  "bg-[linear-gradient(135deg,#0ea5e9,#22d3ee)]",
+  "bg-[linear-gradient(135deg,#f59e0b,#ef4444)]",
+  "bg-[linear-gradient(135deg,#10b981,#0ea5e9)]",
+  "bg-[linear-gradient(135deg,#ec4899,#8b5cf6)]",
+  "bg-[linear-gradient(135deg,#f43f5e,#fb923c)]",
+];
 
 const INITIAL: VenueSpace[] = [
   {
@@ -47,7 +57,7 @@ const INITIAL: VenueSpace[] = [
     eveningSlotEnabled: true,
     fullDaySlotEnabled: true,
     pax: 850,
-    gallery: ["1", "2", "3"],
+    gallery: ["a", "b", "c", "d"],
   },
   {
     id: "sp-2",
@@ -58,7 +68,7 @@ const INITIAL: VenueSpace[] = [
     eveningSlotEnabled: true,
     fullDaySlotEnabled: false,
     pax: 320,
-    gallery: ["1", "2"],
+    gallery: ["a", "b", "c"],
   },
   {
     id: "sp-3",
@@ -69,7 +79,7 @@ const INITIAL: VenueSpace[] = [
     eveningSlotEnabled: true,
     fullDaySlotEnabled: true,
     pax: 140,
-    gallery: [],
+    gallery: ["a", "b"],
   },
 ];
 
@@ -103,9 +113,7 @@ export function SpacesView() {
     const pax = Number(values.pax.replace(/[^0-9]/g, "")) || 0;
     if (editing) {
       setSpaces((prev) =>
-        prev.map((s) =>
-          s.id === editing.id ? { ...s, ...values, pax } : s,
-        ),
+        prev.map((s) => (s.id === editing.id ? { ...s, ...values, pax } : s)),
       );
       toast.success("Space updated", { description: values.name });
     } else {
@@ -140,31 +148,30 @@ export function SpacesView() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {spaces.map((space) => (
-          <Card key={space.id} className="flex flex-col">
-            <CardHeader>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex size-11 items-center justify-center rounded-xl bg-linear-to-br from-primary to-chart-4 text-sm font-semibold text-primary-foreground">
-                  {getInitials(space.name)}
-                </div>
-                <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                  <ImageIcon className="size-3.5" />
-                  {space.gallery.length}
-                </span>
-              </div>
-              <div className="mt-3 space-y-1">
-                <h3 className="font-semibold leading-tight">{space.name}</h3>
-                <p className="line-clamp-2 text-sm text-muted-foreground">
-                  {space.description}
-                </p>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 space-y-3">
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        {spaces.map((space, idx) => (
+          <Card key={space.id} className="flex flex-col overflow-hidden p-0">
+            {/* Photo gallery */}
+            <div className="relative">
+              <SpaceGallery gallery={space.gallery} seed={idx} />
+              <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-md bg-black/50 px-1.5 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
+                <ImageIcon className="size-3" />
+                {space.gallery.length}
+              </span>
+            </div>
+
+            {/* Details */}
+            <div className="flex flex-1 flex-col p-4">
+              <h3 className="font-semibold leading-tight">{space.name}</h3>
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                {space.description}
+              </p>
+
+              <div className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Users className="size-4" />
                 Up to {space.pax.toLocaleString()} guests
               </div>
-              <div className="flex flex-wrap gap-1.5 border-t pt-3">
+
+              <div className="mt-3 flex flex-wrap gap-1.5 border-t pt-3">
                 {SLOT_TOGGLES.map((slot) => {
                   const on = space[slot.key];
                   return (
@@ -182,28 +189,27 @@ export function SpacesView() {
                   );
                 })}
               </div>
-            </CardContent>
-            <CardFooter>
+
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full gap-1.5"
+                className="mt-4 w-full gap-1.5"
                 onClick={() => openEdit(space)}
               >
                 <Pencil className="size-3.5" />
                 Edit
               </Button>
-            </CardFooter>
+            </div>
           </Card>
         ))}
 
         <button
           type="button"
           onClick={openAdd}
-          className="flex min-h-44 flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-muted-foreground transition-colors hover:border-primary/50 hover:bg-muted/40 hover:text-foreground"
+          className="flex min-h-64 flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-muted-foreground transition-colors hover:border-primary/50 hover:bg-muted/40 hover:text-foreground"
         >
           <div className="flex size-11 items-center justify-center rounded-xl bg-muted">
-            <DoorOpen className="size-5" />
+            <Plus className="size-5" />
           </div>
           <span className="text-sm font-medium">Add a new space</span>
         </button>
@@ -216,6 +222,109 @@ export function SpacesView() {
         onSubmit={handleSubmit}
       />
     </>
+  );
+}
+
+function SpaceGallery({
+  gallery,
+  seed,
+}: {
+  gallery: string[];
+  seed: number;
+}) {
+  const [index, setIndex] = useState(0);
+  const [animate, setAnimate] = useState(true);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Append a clone of the first slide so we can loop forward seamlessly.
+  const slides =
+    gallery.length > 1 ? [...gallery, gallery[0]] : gallery;
+
+  useEffect(
+    () => () => {
+      if (timer.current) clearInterval(timer.current);
+    },
+    [],
+  );
+
+  // Re-enable the transition on the frame after an instant snap-back.
+  useEffect(() => {
+    if (!animate) {
+      const id = requestAnimationFrame(() => setAnimate(true));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [animate]);
+
+  function start() {
+    if (gallery.length <= 1) return;
+    timer.current = setInterval(() => setIndex((i) => i + 1), 1300);
+  }
+  function stop() {
+    if (timer.current) clearInterval(timer.current);
+    timer.current = null;
+    setIndex(0);
+  }
+  function handleTransitionEnd() {
+    // Reached the cloned first slide → snap back to the real first with no anim.
+    if (index === slides.length - 1 && gallery.length > 1) {
+      setAnimate(false);
+      setIndex(0);
+    }
+  }
+
+  if (gallery.length === 0) {
+    return (
+      <div className="flex aspect-16/10 flex-col items-center justify-center gap-1 bg-muted text-muted-foreground">
+        <ImageIcon className="size-6" />
+        <span className="text-xs">No photos yet</span>
+      </div>
+    );
+  }
+
+  const activeDot = index % gallery.length;
+
+  return (
+    <div
+      className="group/gallery relative aspect-16/10 overflow-hidden"
+      onMouseEnter={start}
+      onMouseLeave={stop}
+    >
+      <div
+        className={cn(
+          "flex h-full",
+          animate && "transition-transform duration-500 ease-out",
+        )}
+        style={{ transform: `translateX(-${index * 100}%)` }}
+        onTransitionEnd={handleTransitionEnd}
+      >
+        {slides.map((src, i) => (
+          <div
+            key={`${src}-${i}`}
+            className={cn(
+              "relative h-full w-full shrink-0",
+              GRADIENTS[(seed + (i % gallery.length)) % GRADIENTS.length],
+            )}
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.32),transparent_55%)]" />
+          </div>
+        ))}
+      </div>
+
+      {/* Slide indicators */}
+      {gallery.length > 1 && (
+        <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1">
+          {gallery.map((_, i) => (
+            <span
+              key={i}
+              className={cn(
+                "h-1 rounded-full bg-white/60 transition-all",
+                i === activeDot ? "w-4 bg-white" : "w-1",
+              )}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -267,16 +376,17 @@ function SpaceFormDialog({
   }, [open, editing, form]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{editing ? "Edit space" : "Add space"}</DialogTitle>
-          <DialogDescription>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full gap-0 sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>{editing ? "Edit space" : "Add space"}</SheetTitle>
+          <SheetDescription>
             {editing
               ? "Update this space's details."
               : "Create a new bookable space for your venue."}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-4">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -361,12 +471,13 @@ function SpaceFormDialog({
             </div>
           </form>
         </Form>
-        <DialogFooter>
+        </div>
+        <SheetFooter>
           <Button type="submit" form="space-form">
             {editing ? "Save changes" : "Add space"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

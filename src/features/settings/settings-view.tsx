@@ -6,6 +6,7 @@ import {
   CalendarX2,
   Check,
   CircleDollarSign,
+  CreditCard,
   Mail,
   MessageSquare,
   Smartphone,
@@ -69,28 +70,28 @@ const NOTIFICATION_PREFS = [
 ];
 
 const COMM_EVENTS = [
-  { icon: CalendarCheck, label: "Venue booked" },
+  { icon: CalendarCheck, label: "Booking confirmed" },
   { icon: CalendarX2, label: "Booking cancelled" },
-  { icon: CircleDollarSign, label: "Pending payments" },
+  { icon: CircleDollarSign, label: "Payment pending" },
 ];
 
 const COMM_CHANNELS = [
   {
     id: "whatsapp" as const,
     title: "WhatsApp",
-    description: "Instant alerts to your WhatsApp number.",
+    description: "Instant updates to your customers on WhatsApp.",
     icon: <WhatsappIcon className="size-5 rounded" />,
   },
   {
     id: "sms" as const,
     title: "Message (SMS)",
-    description: "Text messages to your phone.",
+    description: "Text updates to your customers' phones.",
     icon: <MessageSquare className="size-4" />,
   },
   {
     id: "email" as const,
     title: "Email",
-    description: "Notifications to your inbox.",
+    description: "Booking updates to your customers' inbox.",
     icon: <Mail className="size-4" />,
   },
 ];
@@ -118,6 +119,9 @@ export function SettingsView() {
     connected: true,
     upiEnabled: true,
     upiId: "aurora-events@okhdfcbank",
+    posConnected: false,
+    posProvider: "square",
+    posTerminalId: "",
     depositPct: "25",
     payoutSchedule: "weekly",
   });
@@ -173,15 +177,15 @@ export function SettingsView() {
               </div>
               <div className="space-y-2">
                 <Label>Currency</Label>
-                <Select defaultValue="usd">
+                <Select defaultValue="inr">
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="inr">INR — ₹</SelectItem>
                     <SelectItem value="usd">USD — $</SelectItem>
                     <SelectItem value="eur">EUR — €</SelectItem>
                     <SelectItem value="gbp">GBP — £</SelectItem>
-                    <SelectItem value="inr">INR — ₹</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -200,8 +204,8 @@ export function SettingsView() {
             <CardHeader>
               <CardTitle>Communication</CardTitle>
               <CardDescription>
-                Get notified when a venue is booked, cancelled, or has pending
-                payments.
+                Automatically notify your customers when their booking is
+                confirmed, cancelled, or has a pending payment.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -212,7 +216,8 @@ export function SettingsView() {
                     Enable communication
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Turn on alerts across your selected channels.
+                    Send booking updates to customers across your selected
+                    channels.
                   </p>
                 </div>
                 <Switch
@@ -418,6 +423,87 @@ export function SettingsView() {
             </CardContent>
             <CardFooter className="justify-end border-t">
               <Button onClick={() => toast.success("UPI settings saved")}>
+                Save changes
+              </Button>
+            </CardFooter>
+          </Card>
+
+          {/* POS integration */}
+          <Card>
+            <CardHeader>
+              <CardTitle>POS integration</CardTitle>
+              <CardDescription>
+                Connect a card terminal to collect in-person payments.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between gap-4 rounded-xl border bg-muted/30 p-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <CreditCard className="size-5" />
+                  </span>
+                  <div className="space-y-0.5">
+                    <Label htmlFor="pos-enabled" className="font-medium">
+                      Enable POS
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Charge cards on a connected terminal.
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="pos-enabled"
+                  checked={payments.posConnected}
+                  onCheckedChange={(v) =>
+                    setPayments((p) => ({ ...p, posConnected: v }))
+                  }
+                />
+              </div>
+              <div
+                className={cn(
+                  "grid gap-5 transition-opacity sm:grid-cols-2",
+                  !payments.posConnected && "pointer-events-none opacity-50",
+                )}
+              >
+                <div className="space-y-2">
+                  <Label>Provider</Label>
+                  <Select
+                    value={payments.posProvider}
+                    onValueChange={(v) =>
+                      setPayments((p) => ({ ...p, posProvider: v }))
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="square">Square Terminal</SelectItem>
+                      <SelectItem value="clover">Clover</SelectItem>
+                      <SelectItem value="pinelabs">Pine Labs</SelectItem>
+                      <SelectItem value="ingenico">Ingenico</SelectItem>
+                      <SelectItem value="verifone">Verifone</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pos-terminal">Terminal ID</Label>
+                  <Input
+                    id="pos-terminal"
+                    placeholder="e.g. TERM-00427"
+                    value={payments.posTerminalId}
+                    onChange={(e) =>
+                      setPayments((p) => ({
+                        ...p,
+                        posTerminalId: e.target.value,
+                      }))
+                    }
+                    disabled={!payments.posConnected}
+                  />
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="justify-end border-t">
+              <Button onClick={() => toast.success("POS settings saved")}>
                 Save changes
               </Button>
             </CardFooter>

@@ -10,6 +10,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SpaceAvailabilityCard } from "@/features/calendar/space-availability-card";
+import { WeekBookings } from "@/features/calendar/week-bookings";
 import { QuickActions } from "@/features/dashboard/quick-actions";
 import { RecentBookings } from "@/features/dashboard/recent-bookings";
 import { VenuesOverview } from "@/features/venues/venues-overview";
@@ -91,6 +92,9 @@ export default function DashboardHome() {
           </Card>
         ))}
       </div>
+
+      {/* Weekly bookings */}
+      <WeekBookings />
 
       {/* Main grid: bookings + venues */}
       <div className="grid gap-6 lg:grid-cols-3">

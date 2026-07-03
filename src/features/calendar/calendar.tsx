@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import {
   STATUS_ORDER,
   STATUS_META,
@@ -26,6 +26,8 @@ interface CalendarProps {
   onSelectDate?: (date: Date, key: string) => void;
   variant?: "full" | "mini";
   defaultMonth?: Date;
+  /** Optional "from" price per day, shown on full-variant cells. */
+  priceForDate?: (key: string) => number | undefined;
   className?: string;
 }
 
@@ -35,6 +37,7 @@ export function Calendar({
   onSelectDate,
   variant = "full",
   defaultMonth,
+  priceForDate,
   className,
 }: CalendarProps) {
   const [viewMonth, setViewMonth] = useState(
@@ -123,6 +126,7 @@ export function Calendar({
               isToday={isToday}
               events={dayEvents}
               variant={variant}
+              price={priceForDate?.(cell.key)}
               onClick={() => onSelectDate?.(cell.date, cell.key)}
             />
           );
@@ -139,6 +143,7 @@ function DayCell({
   isToday,
   events,
   variant,
+  price,
   onClick,
 }: {
   dateNumber: number;
@@ -147,6 +152,7 @@ function DayCell({
   isToday: boolean;
   events: CalendarEvent[];
   variant: "full" | "mini";
+  price?: number;
   onClick: () => void;
 }) {
   const isMini = variant === "mini";
@@ -233,6 +239,12 @@ function DayCell({
           </span>
         )}
       </div>
+
+      {price != null && inCurrentMonth && (
+        <span className="mt-auto pl-0.5 text-[10px] font-medium text-muted-foreground">
+          from {formatCurrency(price)}
+        </span>
+      )}
     </button>
   );
 }

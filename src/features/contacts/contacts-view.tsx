@@ -13,14 +13,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   Form,
   FormControl,
@@ -217,26 +217,27 @@ function NewContactDialog({
   });
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(next) => {
         onOpenChange(next);
         if (!next) form.reset();
       }}
     >
-      <DialogTrigger asChild>
+      <SheetTrigger asChild>
         <Button className="gap-1.5">
           <Plus className="size-4" />
           Add contact
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add contact</DialogTitle>
-          <DialogDescription>
+      </SheetTrigger>
+      <SheetContent className="w-full gap-0 sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>Add contact</SheetTitle>
+          <SheetDescription>
             Save a contact with their preferred channels.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-4">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -331,12 +332,13 @@ function NewContactDialog({
             />
           </form>
         </Form>
-        <DialogFooter>
+        </div>
+        <SheetFooter>
           <Button type="submit" form="contact-form">
             Add contact
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

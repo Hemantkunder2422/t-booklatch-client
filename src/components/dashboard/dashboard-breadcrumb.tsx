@@ -15,6 +15,7 @@ import {
 const LABELS: Record<string, string> = {
   bookings: "Bookings",
   invoices: "Invoices",
+  payments: "Payments",
   enquiries: "Enquiries",
   customers: "Customers",
   contacts: "Contacts",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import {
   Building2,
   CalendarClock,
   Check,
+  CheckCheck,
   CreditCard,
   DoorOpen,
   FileText,
@@ -18,11 +19,13 @@ import {
   Plus,
   Printer,
   Receipt,
+  RotateCcw,
   Search,
   Smartphone,
   User,
   Users,
   Wallet,
+  XCircle,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -34,7 +37,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -46,6 +48,15 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -315,6 +326,15 @@ export function BookingsView() {
     }
   }
 
+  function setStatus(booking: Booking, bookingStatus: BookingStatus) {
+    const updated: Booking = { ...booking, bookingStatus };
+    setBookings((prev) => prev.map((b) => (b.id === booking.id ? updated : b)));
+    setView({ mode: "details", booking: updated });
+    toast.success(
+      `Booking ${BOOKING_STATUS_LABELS[bookingStatus].toLowerCase()}`,
+    );
+  }
+
   return (
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -435,6 +455,7 @@ export function BookingsView() {
         onClose={() => setView(null)}
         onSetView={setView}
         onCollect={collectPayment}
+        onSetStatus={setStatus}
       />
     </>
   );
@@ -447,11 +468,13 @@ function BookingDialog({
   onClose,
   onSetView,
   onCollect,
+  onSetStatus,
 }: {
   view: DialogView;
   onClose: () => void;
   onSetView: (v: DialogView) => void;
   onCollect: (booking: Booking, amount: number, method: PayMethod) => void;
+  onSetStatus: (booking: Booking, status: BookingStatus) => void;
 }) {
   return (
     <Dialog open={view !== null} onOpenChange={(o) => !o && onClose()}>
@@ -460,6 +483,7 @@ function BookingDialog({
           <DetailsView
             booking={view.booking}
             onCollect={() => onSetView({ mode: "collect", booking: view.booking })}
+            onSetStatus={onSetStatus}
             onViewReceipt={(payment) =>
               onSetView({
                 mode: "doc",
@@ -499,14 +523,157 @@ function BookingDialog({
   );
 }
 
+const STATUS_STEPS: BookingStatus[] = ["PENDING", "CONFIRMED", "COMPLETED"];
+
+function BookingStatusControl({
+  booking,
+  onSetStatus,
+}: {
+  booking: Booking;
+  onSetStatus: (booking: Booking, status: BookingStatus) => void;
+}) {
+  const status = booking.bookingStatus;
+  const cancelled = status === "CANCELLED";
+  const currentIndex = STATUS_STEPS.indexOf(status);
+
+  return (
+    <div className="space-y-3 rounded-xl border p-4">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium">Status</span>
+        <span
+          className={cn(
+            "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
+            STATUS_STYLE[status],
+          )}
+        >
+          {BOOKING_STATUS_LABELS[status]}
+        </span>
+      </div>
+
+      {cancelled ? (
+        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <XCircle className="size-4" />
+          This booking was cancelled.
+        </div>
+      ) : (
+        <div className="flex items-center">
+          {STATUS_STEPS.map((step, i) => (
+            <Fragment key={step}>
+              <div className="flex flex-col items-center gap-1">
+                <span
+                  className={cn(
+                    "flex size-6 items-center justify-center rounded-full text-[10px] font-semibold",
+                    i <= currentIndex
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {i < currentIndex ? <Check className="size-3" /> : i + 1}
+                </span>
+                <span
+                  className={cn(
+                    "text-[10px]",
+                    i <= currentIndex
+                      ? "font-medium text-foreground"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {BOOKING_STATUS_LABELS[step]}
+                </span>
+              </div>
+              {i < STATUS_STEPS.length - 1 && (
+                <span
+                  className={cn(
+                    "mx-1 mb-4 h-0.5 flex-1 rounded-full",
+                    i < currentIndex ? "bg-primary" : "bg-border",
+                  )}
+                />
+              )}
+            </Fragment>
+          ))}
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        {status === "PENDING" && (
+          <>
+            <Button
+              size="sm"
+              className="gap-1.5"
+              onClick={() => onSetStatus(booking, "CONFIRMED")}
+            >
+              <CheckCheck className="size-4" />
+              Confirm booking
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-destructive hover:text-destructive"
+              onClick={() => onSetStatus(booking, "CANCELLED")}
+            >
+              <XCircle className="size-4" />
+              Cancel
+            </Button>
+          </>
+        )}
+        {status === "CONFIRMED" && (
+          <>
+            <Button
+              size="sm"
+              className="gap-1.5"
+              onClick={() => onSetStatus(booking, "COMPLETED")}
+            >
+              <Check className="size-4" />
+              Mark completed
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-destructive hover:text-destructive"
+              onClick={() => onSetStatus(booking, "CANCELLED")}
+            >
+              <XCircle className="size-4" />
+              Cancel
+            </Button>
+          </>
+        )}
+        {status === "COMPLETED" && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => onSetStatus(booking, "CONFIRMED")}
+          >
+            <RotateCcw className="size-4" />
+            Reopen
+          </Button>
+        )}
+        {cancelled && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => onSetStatus(booking, "PENDING")}
+          >
+            <RotateCcw className="size-4" />
+            Reopen
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DetailsView({
   booking,
   onCollect,
+  onSetStatus,
   onViewReceipt,
   onViewInvoice,
 }: {
   booking: Booking;
   onCollect: () => void;
+  onSetStatus: (booking: Booking, status: BookingStatus) => void;
   onViewReceipt: (payment: Payment) => void;
   onViewInvoice: () => void;
 }) {
@@ -553,6 +720,9 @@ function DetailsView({
           {BOOKING_SOURCE_LABELS[booking.source]}
         </Row>
       </div>
+
+      {/* Status lifecycle */}
+      <BookingStatusControl booking={booking} onSetStatus={onSetStatus} />
 
       {/* Payment progress */}
       <div className="space-y-3 rounded-xl border bg-muted/30 p-4">
@@ -723,7 +893,7 @@ function CollectView({
           </div>
           <div className="relative">
             <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-muted-foreground">
-              $
+              ₹
             </span>
             <Input
               inputMode="numeric"
@@ -949,26 +1119,27 @@ function NewBookingDialog({
   });
 
   return (
-    <Dialog
+    <Sheet
       open={open}
       onOpenChange={(next) => {
         onOpenChange(next);
         if (!next) form.reset();
       }}
     >
-      <DialogTrigger asChild>
+      <SheetTrigger asChild>
         <Button className="gap-1.5">
           <Plus className="size-4" />
           New booking
         </Button>
-      </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Create booking</DialogTitle>
-          <DialogDescription>
+      </SheetTrigger>
+      <SheetContent className="w-full gap-0 sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle>Create booking</SheetTitle>
+          <SheetDescription>
             Reserve a space and capture the booking details.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-4">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
@@ -1138,7 +1309,7 @@ function NewBookingDialog({
                 )}
               />
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="amount"
@@ -1182,33 +1353,11 @@ function NewBookingDialog({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="bookingStatus"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {(Object.keys(BOOKING_STATUS_LABELS) as BookingStatus[]).map(
-                          (s) => (
-                            <SelectItem key={s} value={s}>
-                              {BOOKING_STATUS_LABELS[s]}
-                            </SelectItem>
-                          ),
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
+            <p className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+              New bookings start as <span className="font-medium">Pending</span>{" "}
+              — confirm, complete, or cancel them from the booking details.
+            </p>
             <FormField
               control={form.control}
               name="notes"
@@ -1224,12 +1373,13 @@ function NewBookingDialog({
             />
           </form>
         </Form>
-        <DialogFooter>
+        </div>
+        <SheetFooter>
           <Button type="submit" form="new-booking-form">
             Create booking
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

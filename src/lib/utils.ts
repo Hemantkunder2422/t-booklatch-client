@@ -9,11 +9,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** Format a number as a localized currency string. */
+/** Format a number as a localized currency string (defaults to INR / ₹). */
 export function formatCurrency(
   value: number,
-  currency = "USD",
-  locale = "en-US",
+  currency = "INR",
+  locale = "en-IN",
 ) {
   return new Intl.NumberFormat(locale, {
     style: "currency",

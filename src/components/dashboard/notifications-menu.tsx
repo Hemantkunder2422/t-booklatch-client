@@ -53,7 +53,7 @@ const INITIAL: AppNotification[] = [
     icon: CreditCard,
     iconClass: "bg-success/15 text-success",
     title: "Payment received",
-    description: "$2,600 deposit from Priya Nair.",
+    description: "₹2,600 deposit from Priya Nair.",
     time: "3h ago",
     read: false,
   },
