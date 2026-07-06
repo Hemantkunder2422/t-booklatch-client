@@ -18,7 +18,7 @@ export function Stepper({
     <div className="space-y-5">
       {/* Segmented progress header */}
       <div className="space-y-2.5">
-        <div className="flex items-center justify-between text-xs font-medium text-primary-foreground/70">
+        <div className="flex items-center justify-between text-xs font-medium text-white/70">
           <span>Setup progress</span>
           <span>
             Step {current + 1} of {steps.length}
@@ -30,7 +30,7 @@ export function Stepper({
               key={step.title}
               className={cn(
                 "h-1.5 flex-1 rounded-full transition-all duration-500",
-                i <= current ? "bg-primary-foreground" : "bg-white/20",
+                i <= current ? "bg-white" : "bg-white/20",
               )}
             />
           ))}
@@ -59,12 +59,12 @@ export function Stepper({
                 <div
                   className={cn(
                     "flex size-10 shrink-0 items-center justify-center rounded-xl transition-all duration-300",
-                    isComplete && "bg-primary-foreground/90 text-primary",
+                    isComplete && "bg-white/90 text-primary",
                     isActive &&
-                      "bg-primary-foreground text-primary ring-4 ring-white/15",
+                      "bg-white text-primary ring-4 ring-white/15",
                     !isComplete &&
                       !isActive &&
-                      "bg-white/10 text-primary-foreground/55",
+                      "bg-white/10 text-white/55",
                   )}
                 >
                   {isComplete ? (
@@ -80,13 +80,13 @@ export function Stepper({
                     className={cn(
                       "flex items-center gap-2 text-sm font-semibold transition-colors",
                       isActive || isComplete
-                        ? "text-primary-foreground"
-                        : "text-primary-foreground/55",
+                        ? "text-white"
+                        : "text-white/55",
                     )}
                   >
                     {step.title}
                     {isActive && (
-                      <span className="rounded-full bg-primary-foreground/20 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+                      <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
                         Now
                       </span>
                     )}
@@ -95,10 +95,10 @@ export function Stepper({
                     className={cn(
                       "truncate text-xs transition-colors",
                       isActive
-                        ? "text-primary-foreground/75"
+                        ? "text-white/75"
                         : isComplete
-                          ? "text-primary-foreground/55"
-                          : "text-primary-foreground/40",
+                          ? "text-white/55"
+                          : "text-white/40",
                     )}
                   >
                     {step.description}
@@ -106,7 +106,7 @@ export function Stepper({
                 </div>
 
                 {isComplete && (
-                  <Check className="size-4 shrink-0 text-primary-foreground/70" />
+                  <Check className="size-4 shrink-0 text-white/70" />
                 )}
               </div>
             </li>

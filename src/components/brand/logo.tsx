@@ -41,7 +41,7 @@ export function BookLatchLogo({
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <span
         className={cn(
-          "flex size-9 items-center justify-center rounded-xl bg-linear-to-br from-primary to-chart-4 text-primary-foreground shadow-sm",
+          "flex size-9 items-center justify-center rounded-xl bg-linear-to-br from-primary to-chart-4 text-white shadow-sm",
           iconClassName,
         )}
       >

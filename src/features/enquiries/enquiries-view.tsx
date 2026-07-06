@@ -1,7 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarClock, DoorOpen, Mail, Phone, Search, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  CalendarClock,
+  DoorOpen,
+  Mail,
+  Phone,
+  Plus,
+  Search,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   Avatar,
@@ -17,7 +30,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   Table,
   TableBody,
@@ -26,6 +63,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { useCustomersStore } from "@/features/customers/store";
 import { cn, formatDate, getInitials } from "@/lib/utils";
 import {
   BOOKING_SLOT_LABELS,
@@ -37,6 +76,16 @@ import {
   type EnquiryStatus,
   type EventType,
 } from "@/types/models";
+
+const SPACES = [
+  "Grand Atrium Hall",
+  "Riverside Pavilion",
+  "The Glasshouse Loft",
+  "Skyline Rooftop",
+];
+const EVENT_TYPES = Object.keys(EVENT_TYPE_LABELS) as EventType[];
+const SLOTS = Object.keys(BOOKING_SLOT_LABELS) as BookingSlot[];
+const SOURCES = Object.keys(BOOKING_SOURCE_LABELS) as BookingSource[];
 
 interface Enquiry {
   id: string;
@@ -132,10 +181,15 @@ const INITIAL: Enquiry[] = [
   },
 ];
 
+let enquiryCounter = 319;
+
 export function EnquiriesView() {
+  const router = useRouter();
+  const addCustomer = useCustomersStore((s) => s.addCustomer);
   const [enquiries, setEnquiries] = useState<Enquiry[]>(INITIAL);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<Enquiry | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const counts = useMemo(
     () => ({
@@ -166,13 +220,56 @@ export function EnquiriesView() {
     setActive((curr) => (curr && curr.id === id ? { ...curr, status } : curr));
   }
 
+  function handleCreate(values: EnquiryValues) {
+    const enquiry: Enquiry = {
+      id: `EN-${enquiryCounter++}`,
+      venueSpaceName: values.venueSpaceName,
+      customerName: values.customerName,
+      customerPhone: values.customerPhone,
+      customerEmail: values.customerEmail || undefined,
+      eventName: values.eventName || undefined,
+      eventType: values.eventType,
+      bookingDate: values.bookingDate,
+      slot: values.slot,
+      status: "NEW",
+      source: values.source,
+      pax: values.pax ? Number(values.pax) : undefined,
+      notes: values.notes || undefined,
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+    setEnquiries((prev) => [enquiry, ...prev]);
+    setCreateOpen(false);
+    toast.success("Enquiry added", { description: enquiry.customerName });
+  }
+
+  function convertToCustomer(enquiry: Enquiry) {
+    const created = addCustomer({
+      name: enquiry.customerName,
+      email: enquiry.customerEmail ?? "",
+      phone: enquiry.customerPhone,
+      source: "enquiry",
+      status: "active",
+    });
+    setStatus(enquiry.id, "CONVERTED");
+    setActive(null);
+    toast.success("Converted to customer", { description: created.name });
+    router.push(`/customers/${created.id}`);
+  }
+
   return (
     <>
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Enquiries</h1>
-        <p className="text-muted-foreground">
-          Incoming requests from prospective customers.
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Enquiries</h1>
+          <p className="text-muted-foreground">
+            Incoming requests from prospective customers.
+          </p>
+        </div>
+        <AddEnquirySheet
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onSubmit={handleCreate}
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -264,8 +361,295 @@ export function EnquiriesView() {
         enquiry={active}
         onOpenChange={(open) => !open && setActive(null)}
         onSetStatus={setStatus}
+        onConvert={convertToCustomer}
       />
     </>
+  );
+}
+
+const enquirySchema = z.object({
+  customerName: z.string().trim().min(2, "Name is required"),
+  customerPhone: z.string().trim().min(1, "Phone is required"),
+  customerEmail: z.string().email("Enter a valid email").optional().or(z.literal("")),
+  venueSpaceName: z.string().min(1, "Select a space"),
+  eventName: z.string().optional().or(z.literal("")),
+  eventType: z.enum(["WEDDING", "BIRTHDAY", "RECEPTION", "CORPORATE", "OTHERS"]),
+  bookingDate: z.string().min(1, "Pick a date"),
+  slot: z.enum(["MORNING", "EVENING", "FULL_DAY"]),
+  source: z.enum(["INTERNAL", "PHONE", "WHATSAPP", "CUSTOMER_APP"]),
+  pax: z.string().optional().or(z.literal("")),
+  notes: z.string().optional().or(z.literal("")),
+});
+type EnquiryValues = z.infer<typeof enquirySchema>;
+
+function AddEnquirySheet({
+  open,
+  onOpenChange,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (values: EnquiryValues) => void;
+}) {
+  const form = useForm<EnquiryValues>({
+    resolver: zodResolver(enquirySchema),
+    defaultValues: {
+      customerName: "",
+      customerPhone: "",
+      customerEmail: "",
+      venueSpaceName: "",
+      eventName: "",
+      eventType: "OTHERS",
+      bookingDate: "",
+      slot: "EVENING",
+      source: "PHONE",
+      pax: "",
+      notes: "",
+    },
+  });
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        onOpenChange(next);
+        if (!next) form.reset();
+      }}
+    >
+      <SheetTrigger asChild>
+        <Button className="gap-1.5">
+          <Plus className="size-4" />
+          Add enquiry
+        </Button>
+      </SheetTrigger>
+      <SheetContent className="w-full gap-0 sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle>Add enquiry</SheetTitle>
+          <SheetDescription>
+            Log a booking enquiry — perfect for calls and walk-ins.
+          </SheetDescription>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-4">
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-4"
+              id="enquiry-form"
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="customerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Customer name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Full name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="customerPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1 (555) 000-0000" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="customerEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email (optional)</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="name@email.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="eventName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event name (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g. Wedding" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="eventType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event type</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {EVENT_TYPES.map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {EVENT_TYPE_LABELS[t]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="venueSpaceName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Space</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select a space" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {SPACES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="pax"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Guests (optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          inputMode="numeric"
+                          placeholder="120"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(e.target.value.replace(/[^0-9]/g, ""))
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <FormField
+                  control={form.control}
+                  name="bookingDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="slot"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Slot</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {SLOTS.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {BOOKING_SLOT_LABELS[s]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="source"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Source</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {SOURCES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {BOOKING_SOURCE_LABELS[s]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        rows={2}
+                        placeholder="What are they looking for…"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+        </div>
+        <SheetFooter>
+          <Button type="submit" form="enquiry-form">
+            Add enquiry
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -292,10 +676,12 @@ function EnquiryDialog({
   enquiry,
   onOpenChange,
   onSetStatus,
+  onConvert,
 }: {
   enquiry: Enquiry | null;
   onOpenChange: (open: boolean) => void;
   onSetStatus: (id: string, status: EnquiryStatus) => void;
+  onConvert: (enquiry: Enquiry) => void;
 }) {
   return (
     <Dialog open={!!enquiry} onOpenChange={onOpenChange}>
@@ -372,15 +758,11 @@ function EnquiryDialog({
                 Mark follow-up
               </Button>
               <Button
-                className="sm:flex-1"
-                onClick={() => {
-                  onSetStatus(enquiry.id, "CONVERTED");
-                  toast.success("Enquiry converted", {
-                    description: "Create a booking to finish.",
-                  });
-                }}
+                className="gap-1.5 sm:flex-1"
+                onClick={() => onConvert(enquiry)}
               >
-                Convert to booking
+                <UserPlus className="size-4" />
+                Convert to customer
               </Button>
             </DialogFooter>
           </>

@@ -134,7 +134,7 @@ export function OnboardingWizard() {
     <Form {...form}>
       <div className="grid min-h-svh lg:grid-cols-[21rem_1fr]">
         {/* Left rail — pinned so it never scrolls with the form */}
-        <aside className="relative hidden overflow-hidden bg-linear-to-br from-primary via-primary to-chart-4 p-10 text-primary-foreground lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:justify-between">
+        <aside className="relative hidden overflow-hidden bg-linear-to-br from-primary via-primary to-chart-4 p-10 text-white lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:justify-between">
           <div className="pointer-events-none absolute -top-20 -right-24 size-80 rounded-full bg-white/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-16 size-80 rounded-full bg-chart-4/30 blur-3xl" />
 
@@ -147,7 +147,7 @@ export function OnboardingWizard() {
             </div>
 
             <div className="space-y-1.5">
-              <p className="flex items-center gap-1.5 text-sm font-medium text-primary-foreground/80">
+              <p className="flex items-center gap-1.5 text-sm font-medium text-white/80">
                 <Sparkles className="size-4" />
                 Venue setup
               </p>
@@ -161,9 +161,9 @@ export function OnboardingWizard() {
             <Stepper steps={STEPS} current={step} />
           </div>
 
-          <p className="relative text-xs text-primary-foreground/70">
+          <p className="relative text-xs text-white/70">
             Need a hand? Email{" "}
-            <span className="font-medium text-primary-foreground">
+            <span className="font-medium text-white">
               support@booklatch.com
             </span>
           </p>
@@ -201,7 +201,7 @@ export function OnboardingWizard() {
           <div className="relative flex-1 overflow-y-auto px-6 py-10 sm:px-10">
             <div className="mx-auto w-full max-w-2xl">
               <header className="mb-8 flex items-start gap-4">
-                <span className="hidden size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-chart-4 text-primary-foreground shadow-lg shadow-primary/20 lg:flex">
+                <span className="hidden size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-chart-4 text-white shadow-lg shadow-primary/20 lg:flex">
                   <StepIcon className="size-6" />
                 </span>
                 <div className="space-y-1.5">
