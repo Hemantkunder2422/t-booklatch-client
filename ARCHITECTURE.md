@@ -47,5 +47,5 @@ component → zustand store (stores)  ← client-only UI/session state
 - **Never call axios from a component.** Component → hook → service → `http`.
 - **Server data lives in TanStack Query**, client/UI/session data lives in Zustand.
 - **Always use `queryKeys`** for cache keys + invalidation.
-- The axios interceptor attaches `authStore.getToken()` and clears the session + redirects on `401`.
+- Auth uses an http-only session cookie (`withCredentials: true`); the axios interceptor clears the session + redirects on `401`.
 - Configure the API base URL via `NEXT_PUBLIC_API_BASE_URL` (see `.env.example`).

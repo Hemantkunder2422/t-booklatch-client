@@ -4,9 +4,9 @@ import type { StoreApi, UseBoundStore } from "zustand";
  * Auto-generate typed `.use.<field>()` selectors for a Zustand store so you can
  * subscribe to a single slice without writing a selector each time:
  *
- *   const token = useAuthStore.use.token();   // re-renders only when token changes
+ *   const user = useAuthStore.use.user();   // re-renders only when user changes
  *
- * instead of `useAuthStore((s) => s.token)`.
+ * instead of `useAuthStore((s) => s.user)`.
  */
 type WithSelectors<S> = S extends { getState: () => infer T }
   ? S & { use: { [K in keyof T]: () => T[K] } }

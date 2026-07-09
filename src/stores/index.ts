@@ -2,7 +2,7 @@
  * Zustand stores barrel.
  *
  * Convention: one store per domain in `<name>.store.ts`, wrapped with
- * `createSelectors` so you can do `useAuthStore.use.token()`.
+ * `createSelectors` so you can do `useAuthStore.use.user()`.
  * Keep SERVER data in TanStack Query; keep CLIENT state here.
  */
 export { useAuthStore, authStore, type AuthUser } from "./auth.store";

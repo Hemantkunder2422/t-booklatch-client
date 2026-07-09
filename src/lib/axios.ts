@@ -1,8 +1,4 @@
-import axios, {
-  AxiosError,
-  type AxiosInstance,
-  type InternalAxiosRequestConfig,
-} from "axios";
+import axios, { AxiosError, type AxiosInstance } from "axios";
 import { authStore } from "@/stores/auth.store";
 import type { ApiError } from "@/types/api";
 
@@ -10,7 +6,8 @@ import type { ApiError } from "@/types/api";
  * Global Axios instance for the BookLatch API.
  *
  * - Base URL comes from NEXT_PUBLIC_API_BASE_URL (falls back to "/api").
- * - The bearer token is read from the Zustand auth store on every request.
+ * - Auth uses an http-only session cookie set by the backend; `withCredentials`
+ *   makes the browser send it on every request. No token is handled in JS.
  * - 401s clear the session and bounce to /login.
  * - All errors are normalized to `ApiError` (see types/api.ts).
  */
@@ -21,8 +18,8 @@ export const api: AxiosInstance = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  // Flip to true if your API uses http-only auth cookies instead of bearer tokens.
-  withCredentials: false,
+  // Send the http-only auth cookie with every request.
+  withCredentials: true,
 });
 
 /** Shape most backends use for error payloads. */
@@ -31,18 +28,6 @@ interface ApiErrorBody {
   error?: string;
   errors?: Record<string, string[]>;
 }
-
-// ── Request interceptor ─────────────────────────────────────────────
-api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = authStore.getToken();
-    if (token) {
-      config.headers.set("Authorization", `Bearer ${token}`);
-    }
-    return config;
-  },
-  (error) => Promise.reject(error),
-);
 
 // ── Response interceptor ────────────────────────────────────────────
 api.interceptors.response.use(

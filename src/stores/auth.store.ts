@@ -12,43 +12,36 @@ export interface AuthUser {
 
 interface AuthState {
   user: AuthUser | null;
-  token: string | null;
   isAuthenticated: boolean;
 
-  setAuth: (user: AuthUser, token: string) => void;
-  setToken: (token: string | null) => void;
+  setAuth: (user: AuthUser) => void;
   setUser: (user: AuthUser | null) => void;
   clear: () => void;
 }
 
 /**
- * Auth/session store. The token is read by the axios request interceptor
- * (see lib/axios.ts) and cleared automatically on a 401 response.
- * Persisted to localStorage so the session survives reloads.
+ * Auth/session store. Authentication itself lives in an http-only cookie set by
+ * the backend (sent automatically because axios uses `withCredentials`), so no
+ * token is ever stored client-side. We only persist the current user for the UI
+ * and clear it on a 401 response (see lib/axios.ts).
  */
 const useAuthStoreBase = create<AuthState>()(
   devtools(
     persist(
       (set) => ({
         user: null,
-        token: null,
         isAuthenticated: false,
 
-        setAuth: (user, token) =>
-          set({ user, token, isAuthenticated: true }, false, "auth/setAuth"),
-        setToken: (token) =>
-          set({ token, isAuthenticated: !!token }, false, "auth/setToken"),
-        setUser: (user) => set({ user }, false, "auth/setUser"),
+        setAuth: (user) =>
+          set({ user, isAuthenticated: true }, false, "auth/setAuth"),
+        setUser: (user) =>
+          set({ user, isAuthenticated: !!user }, false, "auth/setUser"),
         clear: () =>
-          set(
-            { user: null, token: null, isAuthenticated: false },
-            false,
-            "auth/clear",
-          ),
+          set({ user: null, isAuthenticated: false }, false, "auth/clear"),
       }),
       {
         name: "booklatch.auth",
-        partialize: (state) => ({ token: state.token, user: state.user }),
+        partialize: (state) => ({ user: state.user }),
       },
     ),
     { name: "AuthStore" },
@@ -59,6 +52,5 @@ export const useAuthStore = createSelectors(useAuthStoreBase);
 
 /** Non-reactive accessors for use outside React (e.g. axios interceptors). */
 export const authStore = {
-  getToken: () => useAuthStoreBase.getState().token,
   clear: () => useAuthStoreBase.getState().clear(),
 };

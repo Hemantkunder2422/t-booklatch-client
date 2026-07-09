@@ -5,4 +5,4 @@
  * through `@/lib/http`. Import them in query hooks, never call axios directly
  * from components.
  */
-export * from "./bookings.service";
+export * from "./auth.service";

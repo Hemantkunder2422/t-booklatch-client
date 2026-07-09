@@ -21,13 +21,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { sleep } from "@/lib/utils";
+import type { ApiError } from "@/types/api";
 import { loginSchema, type LoginValues } from "./schema";
+import { useSignin } from "./use-auth";
 
 export function LoginForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-
+  const { mutateAsync: signin, isPending } = useSignin();
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "", remember: true },
@@ -35,18 +36,28 @@ export function LoginForm() {
 
   async function onSubmit(values: LoginValues) {
     try {
-      // TODO: replace with a real auth request via the shared axios instance.
-      await sleep(1200);
-      toast.success("Welcome back!", {
-        description: `Signed in as ${values.email}. Redirecting…`,
+      const user = await signin({
+        email: values.email,
+        password: values.password,
       });
-      router.push("/");
-    } catch {
-      toast.error("Couldn't sign you in. Please try again.");
+      toast.success("Welcome back!", {
+        description: `Signed in as ${user.email}. Redirecting…`,
+      });
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.push(next?.startsWith("/") ? next : "/");
+    } catch (error) {
+      const apiError = error as ApiError;
+      const fields = apiError.fieldErrors ?? {};
+      for (const key of ["email", "password"] as const) {
+        if (fields[key]?.length) {
+          form.setError(key, { message: fields[key][0] });
+        }
+      }
+      toast.error(apiError.message ?? "Couldn't sign you in. Please try again.");
     }
   }
 
-  const isSubmitting = form.formState.isSubmitting;
+  const isSubmitting = isPending;
 
   return (
     <div className="w-full max-w-sm space-y-8">
