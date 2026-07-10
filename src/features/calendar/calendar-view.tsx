@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
+import { useBookingsStore } from "@/features/bookings/store";
 import type { BookingSlot } from "@/types/models";
+import { bookingsToEvents } from "./booking-events";
 import { Calendar } from "./calendar";
 import { CalendarLegend } from "./calendar-legend";
 import { DayDetails } from "./day-details";
@@ -20,11 +22,22 @@ import { DaySlotPricing, PricingSheet } from "./slot-pricing";
 import { dateKey } from "./utils";
 
 export function CalendarView() {
-  // Anchor sample data + initial selection to "today" (client-side).
-  const [{ events, initialDate }] = useState(() => {
+  const bookings = useBookingsStore.use.bookings();
+
+  // Anchor sample availability + initial selection to "today" (client-side).
+  // Real bookings come from the store, so cancelling one frees its slot here.
+  const [{ ambiance, initialDate }] = useState(() => {
     const now = new Date();
-    return { events: buildSampleEvents(now), initialDate: now };
+    return {
+      ambiance: buildSampleEvents(now).filter((e) => !e.booking),
+      initialDate: now,
+    };
   });
+
+  const events = useMemo(
+    () => [...ambiance, ...bookingsToEvents(bookings)],
+    [ambiance, bookings],
+  );
 
   const [selected, setSelected] = useState<Date | null>(initialDate);
   const [pricing, setPricing] = useState<PricingState>(DEFAULT_PRICING);

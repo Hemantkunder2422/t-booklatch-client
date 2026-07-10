@@ -57,4 +57,13 @@ export const authService = {
     const body = await http.post<RawSigninBody>("/auth/signin", payload);
     return normalizeUser(body);
   },
+
+  /** Verify the current session cookie and return the signed-in user. */
+  me: async (): Promise<AuthUser> => {
+    const body = await http.get<RawSigninBody>("/auth/me");
+    return normalizeUser(body);
+  },
+
+  /** Clear the session cookie on the server. */
+  signout: () => http.post<void>("/auth/signout"),
 };

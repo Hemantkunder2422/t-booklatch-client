@@ -53,6 +53,8 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { authService } from "@/services/auth.service";
+import { useAuthStore } from "@/stores/auth.store";
 import { getInitials } from "@/lib/utils";
 
 const MAIN_NAV = [
@@ -202,7 +204,22 @@ function VenueSwitcher({
 function UserMenu() {
   const router = useRouter();
   const { isMobile } = useSidebar();
-  const user = { name: "Jordan Lee", email: "jordan@aurora-events.com" };
+  const clearAuth = useAuthStore.use.clear();
+  const storedUser = useAuthStore.use.user();
+  const user = {
+    name: storedUser?.name || "Jordan Lee",
+    email: storedUser?.email || "jordan@aurora-events.com",
+  };
+
+  async function handleLogout() {
+    try {
+      await authService.signout();
+    } catch {
+      // Ignore network errors — clear the client session regardless.
+    }
+    clearAuth();
+    router.replace("/login");
+  }
 
   return (
     <DropdownMenu>
@@ -267,7 +284,7 @@ function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="gap-2 text-destructive focus:text-destructive"
-          onClick={() => router.push("/login")}
+          onClick={handleLogout}
         >
           <LogOut className="size-4" />
           Log out

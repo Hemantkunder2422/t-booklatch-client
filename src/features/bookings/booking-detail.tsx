@@ -1,55 +1,28 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Banknote,
-  Building2,
   CalendarClock,
   Check,
-  CheckCheck,
-  CreditCard,
   DoorOpen,
   FileText,
   Mail,
   Phone,
-  Printer,
   Receipt,
   RotateCcw,
-  Smartphone,
   User,
   Users,
   Wallet,
   XCircle,
-  type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { WhatsappIcon } from "@/features/onboarding/brand-icons";
 import { cn, formatCurrency, formatDate, getInitials } from "@/lib/utils";
 import {
@@ -60,32 +33,21 @@ import {
   type BookingStatus,
 } from "@/types/models";
 import {
+  balanceOf,
   paidOf,
+  payStatus,
   STATUS_STYLE,
   useBookingsStore,
   type Booking,
-  type PayMethod,
-  type Payment,
 } from "./store";
 
-const PAY_METHODS: { value: PayMethod; icon: LucideIcon }[] = [
-  { value: "UPI", icon: Smartphone },
-  { value: "Card", icon: CreditCard },
-  { value: "Cash", icon: Banknote },
-  { value: "Bank transfer", icon: Building2 },
-];
-const DEPOSIT_PCT = 25;
 const STATUS_STEPS: BookingStatus[] = ["PENDING", "CONFIRMED", "COMPLETED"];
 
 export function BookingDetail({ id }: { id: string }) {
+  const router = useRouter();
   const booking = useBookingsStore((s) => s.bookings.find((b) => b.id === id));
-  const collectPayment = useBookingsStore((s) => s.collectPayment);
   const setStatus = useBookingsStore((s) => s.setStatus);
-
-  const [collectOpen, setCollectOpen] = useState(false);
-  const [doc, setDoc] = useState<
-    { type: "receipt" | "invoice"; payment?: Payment } | null
-  >(null);
+  const cancelBooking = useBookingsStore((s) => s.cancelBooking);
 
   if (!booking) {
     return (
@@ -102,20 +64,11 @@ export function BookingDetail({ id }: { id: string }) {
   }
 
   const paid = paidOf(booking);
-  const balance = Math.max(0, booking.amount - paid);
+  const balance = balanceOf(booking);
   const pct = booking.amount > 0 ? (paid / booking.amount) * 100 : 0;
-
-  function handleCollect(amount: number, method: PayMethod) {
-    const result = collectPayment(booking!.id, amount, method);
-    setCollectOpen(false);
-    if (result?.invoiceGenerated) {
-      toast.success(`Paid in full — invoice ${result.invoiceId} generated`);
-    } else if (result) {
-      toast.success(`Receipt ${result.receiptId} generated`, {
-        description: `${formatCurrency(amount)} via ${method}`,
-      });
-    }
-  }
+  const status = payStatus(booking);
+  const canCollect = balance > 0 && booking.bookingStatus !== "CANCELLED";
+  const paymentHref = `/payments/${booking.id}`;
 
   return (
     <>
@@ -156,8 +109,8 @@ export function BookingDetail({ id }: { id: string }) {
               </p>
             </div>
           </div>
-          {balance > 0 && booking.bookingStatus !== "CANCELLED" && (
-            <Button className="gap-1.5" onClick={() => setCollectOpen(true)}>
+          {canCollect && (
+            <Button className="gap-1.5" onClick={() => router.push(paymentHref)}>
               <Wallet className="size-4" />
               Collect {formatCurrency(balance)}
             </Button>
@@ -174,7 +127,10 @@ export function BookingDetail({ id }: { id: string }) {
               <Field icon={<DoorOpen className="size-4" />} label="Space">
                 {booking.venueSpaceName}
               </Field>
-              <Field icon={<CalendarClock className="size-4" />} label="Date & slot">
+              <Field
+                icon={<CalendarClock className="size-4" />}
+                label="Date & slot"
+              >
                 {formatDate(booking.bookingDate)} ·{" "}
                 {BOOKING_SLOT_LABELS[booking.slot]}
               </Field>
@@ -202,23 +158,27 @@ export function BookingDetail({ id }: { id: string }) {
                     of {formatCurrency(booking.amount)}
                   </span>
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  {balance > 0
-                    ? `Balance ${formatCurrency(balance)}`
-                    : "Paid in full"}
+                <span className={cn("text-xs font-medium", status.className)}>
+                  {status.label}
                 </span>
               </div>
               <Progress value={pct} />
-              {balance > 0 && booking.bookingStatus !== "CANCELLED" && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-muted-foreground">
+                  {balance > 0
+                    ? `Balance ${formatCurrency(balance)} · due ${formatDate(booking.dueDate)}`
+                    : "Paid in full"}
+                </span>
                 <Button
                   size="sm"
+                  variant={canCollect ? "default" : "outline"}
                   className="gap-1.5"
-                  onClick={() => setCollectOpen(true)}
+                  onClick={() => router.push(paymentHref)}
                 >
                   <Wallet className="size-4" />
-                  Collect payment
+                  {canCollect ? "Collect payment" : "View payments"}
                 </Button>
-              )}
+              </div>
             </div>
 
             {(booking.payments.length > 0 || booking.invoiceId) && (
@@ -228,11 +188,9 @@ export function BookingDetail({ id }: { id: string }) {
                 </p>
                 <div className="divide-y rounded-xl border">
                   {booking.payments.map((payment) => (
-                    <button
+                    <div
                       key={payment.id}
-                      type="button"
-                      onClick={() => setDoc({ type: "receipt", payment })}
-                      className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-muted/50"
+                      className="flex items-center gap-3 p-3"
                     >
                       <span className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
                         <Receipt className="size-4" />
@@ -246,14 +204,10 @@ export function BookingDetail({ id }: { id: string }) {
                       <span className="text-sm font-medium">
                         {formatCurrency(payment.amount)}
                       </span>
-                    </button>
+                    </div>
                   ))}
                   {booking.invoiceId && (
-                    <button
-                      type="button"
-                      onClick={() => setDoc({ type: "invoice" })}
-                      className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-muted/50"
-                    >
+                    <div className="flex items-center gap-3 p-3">
                       <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                         <FileText className="size-4" />
                       </span>
@@ -265,10 +219,15 @@ export function BookingDetail({ id }: { id: string }) {
                           Invoice · paid in full
                         </p>
                       </div>
-                      <span className="text-xs font-medium text-success">
-                        View
-                      </span>
-                    </button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-muted-foreground"
+                        asChild
+                      >
+                        <Link href="/invoices">Open</Link>
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -333,34 +292,23 @@ export function BookingDetail({ id }: { id: string }) {
           <InfoCard title="Status">
             <StatusControl
               booking={booking}
-              onSetStatus={(status) => {
-                setStatus(booking.id, status);
-                toast.success(
-                  `Booking ${BOOKING_STATUS_LABELS[status].toLowerCase()}`,
-                );
+              onCollect={() => router.push(paymentHref)}
+              onComplete={() => {
+                setStatus(booking.id, "COMPLETED");
+                toast.success("Booking marked completed");
+              }}
+              onReopen={(to) => {
+                setStatus(booking.id, to);
+                toast.success("Booking reopened");
+              }}
+              onCancel={() => {
+                cancelBooking(booking.id);
+                toast.success("Booking cancelled — slot released");
               }}
             />
           </InfoCard>
         </div>
       </div>
-
-      {/* Collect payment sheet */}
-      <Sheet open={collectOpen} onOpenChange={setCollectOpen}>
-        <SheetContent className="w-full gap-0 sm:max-w-md">
-          {collectOpen && (
-            <CollectPanel booking={booking} onCollect={handleCollect} />
-          )}
-        </SheetContent>
-      </Sheet>
-
-      {/* Document dialog */}
-      <Dialog open={!!doc} onOpenChange={(o) => !o && setDoc(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-          {doc && (
-            <DocumentView booking={booking} type={doc.type} payment={doc.payment} />
-          )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
@@ -406,21 +354,28 @@ function Field({
 
 function StatusControl({
   booking,
-  onSetStatus,
+  onCollect,
+  onComplete,
+  onReopen,
+  onCancel,
 }: {
   booking: Booking;
-  onSetStatus: (status: BookingStatus) => void;
+  onCollect: () => void;
+  onComplete: () => void;
+  onReopen: (to: BookingStatus) => void;
+  onCancel: () => void;
 }) {
   const status = booking.bookingStatus;
   const cancelled = status === "CANCELLED";
   const currentIndex = STATUS_STEPS.indexOf(status);
+  const balance = balanceOf(booking);
 
   return (
     <div className="space-y-4">
       {cancelled ? (
         <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           <XCircle className="size-4" />
-          This booking was cancelled.
+          Cancelled — the slot has been released.
         </div>
       ) : (
         <div className="flex items-center">
@@ -461,22 +416,25 @@ function StatusControl({
         </div>
       )}
 
+      {status === "PENDING" && (
+        <p className="text-xs text-muted-foreground">
+          Collect the full balance of {formatCurrency(balance)} to confirm this
+          booking.
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-2">
         {status === "PENDING" && (
           <>
-            <Button
-              size="sm"
-              className="gap-1.5"
-              onClick={() => onSetStatus("CONFIRMED")}
-            >
-              <CheckCheck className="size-4" />
-              Confirm
+            <Button size="sm" className="gap-1.5" onClick={onCollect}>
+              <Wallet className="size-4" />
+              Collect payment
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="gap-1.5 text-destructive hover:text-destructive"
-              onClick={() => onSetStatus("CANCELLED")}
+              onClick={onCancel}
             >
               <XCircle className="size-4" />
               Cancel
@@ -485,11 +443,7 @@ function StatusControl({
         )}
         {status === "CONFIRMED" && (
           <>
-            <Button
-              size="sm"
-              className="gap-1.5"
-              onClick={() => onSetStatus("COMPLETED")}
-            >
+            <Button size="sm" className="gap-1.5" onClick={onComplete}>
               <Check className="size-4" />
               Mark completed
             </Button>
@@ -497,7 +451,7 @@ function StatusControl({
               size="sm"
               variant="outline"
               className="gap-1.5 text-destructive hover:text-destructive"
-              onClick={() => onSetStatus("CANCELLED")}
+              onClick={onCancel}
             >
               <XCircle className="size-4" />
               Cancel
@@ -509,7 +463,7 @@ function StatusControl({
             size="sm"
             variant="outline"
             className="gap-1.5"
-            onClick={() => onSetStatus("CONFIRMED")}
+            onClick={() => onReopen("CONFIRMED")}
           >
             <RotateCcw className="size-4" />
             Reopen
@@ -520,255 +474,13 @@ function StatusControl({
             size="sm"
             variant="outline"
             className="gap-1.5"
-            onClick={() => onSetStatus("PENDING")}
+            onClick={() => onReopen("PENDING")}
           >
             <RotateCcw className="size-4" />
             Reopen
           </Button>
         )}
       </div>
-    </div>
-  );
-}
-
-function CollectPanel({
-  booking,
-  onCollect,
-}: {
-  booking: Booking;
-  onCollect: (amount: number, method: PayMethod) => void;
-}) {
-  const paid = paidOf(booking);
-  const balance = Math.max(0, booking.amount - paid);
-  const advance = Math.round((booking.amount * DEPOSIT_PCT) / 100);
-  const suggested = paid === 0 ? Math.min(advance, balance) : balance;
-
-  const [amount, setAmount] = useState(String(suggested));
-  const [method, setMethod] = useState<PayMethod>("UPI");
-
-  const value = Math.min(Number(amount) || 0, balance);
-  const willComplete = paid + value >= booking.amount;
-
-  return (
-    <>
-      <SheetHeader>
-        <SheetTitle>Collect payment</SheetTitle>
-        <SheetDescription>
-          {booking.id} · balance {formatCurrency(balance)}
-        </SheetDescription>
-      </SheetHeader>
-
-      <div className="flex-1 space-y-4 overflow-y-auto px-4">
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Payment method</p>
-          <div className="grid grid-cols-2 gap-2">
-            {PAY_METHODS.map((m) => {
-              const selected = method === m.value;
-              return (
-                <button
-                  key={m.value}
-                  type="button"
-                  onClick={() => setMethod(m.value)}
-                  className={cn(
-                    "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all",
-                    selected
-                      ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/30"
-                      : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground",
-                  )}
-                >
-                  <m.icon className="size-4" />
-                  {m.value}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">Amount</p>
-            <div className="flex gap-1.5">
-              {paid === 0 && (
-                <button
-                  type="button"
-                  onClick={() => setAmount(String(Math.min(advance, balance)))}
-                  className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                >
-                  Advance {DEPOSIT_PCT}%
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setAmount(String(balance))}
-                className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground hover:border-primary/40 hover:text-foreground"
-              >
-                Full balance
-              </button>
-            </div>
-          </div>
-          <div className="relative">
-            <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm text-muted-foreground">
-              ₹
-            </span>
-            <Input
-              inputMode="numeric"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
-              className="pl-7"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {willComplete
-              ? "This completes the booking — an invoice will be generated."
-              : "A receipt will be generated for this advance payment."}
-          </p>
-        </div>
-      </div>
-
-      <SheetFooter>
-        <Button
-          className="w-full gap-1.5"
-          disabled={value <= 0}
-          onClick={() => onCollect(value, method)}
-        >
-          <Check className="size-4" />
-          Collect {formatCurrency(value)}
-        </Button>
-      </SheetFooter>
-    </>
-  );
-}
-
-function DocumentView({
-  booking,
-  type,
-  payment,
-}: {
-  booking: Booking;
-  type: "receipt" | "invoice";
-  payment?: Payment;
-}) {
-  const paid = paidOf(booking);
-  const isReceipt = type === "receipt";
-
-  return (
-    <>
-      <DialogHeader>
-        <div className="flex items-center justify-between gap-3">
-          <DialogTitle>{isReceipt ? "Receipt" : "Invoice"}</DialogTitle>
-          <span
-            className={cn(
-              "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-              isReceipt
-                ? "bg-warning/15 text-warning-foreground dark:text-warning"
-                : "bg-success/15 text-success",
-            )}
-          >
-            {isReceipt ? "Advance payment" : "Paid in full"}
-          </span>
-        </div>
-        <DialogDescription>
-          {isReceipt ? payment?.id : booking.invoiceId}
-        </DialogDescription>
-      </DialogHeader>
-
-      <div className="space-y-4 rounded-xl border p-4 text-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-linear-to-br from-primary to-chart-4 text-white">
-              <Building2 className="size-4" />
-            </span>
-            <span className="font-semibold">BookLatch</span>
-          </div>
-          <span className="text-xs text-muted-foreground">{booking.id}</span>
-        </div>
-        <Separator />
-        <div className="flex justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground">Billed to</p>
-            <p className="font-medium">{booking.customerName}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">
-              {isReceipt ? "Received on" : "Space"}
-            </p>
-            <p className="font-medium">
-              {isReceipt ? formatDate(payment!.date) : booking.venueSpaceName}
-            </p>
-          </div>
-        </div>
-
-        {isReceipt ? (
-          <div className="space-y-1.5">
-            <DocLine label="Booking total">
-              {formatCurrency(booking.amount)}
-            </DocLine>
-            <DocLine label="Payment method">{payment!.method}</DocLine>
-            <Separator />
-            <DocLine label="Amount received" strong>
-              {formatCurrency(payment!.amount)}
-            </DocLine>
-            <DocLine label="Balance remaining">
-              {formatCurrency(Math.max(0, booking.amount - paid))}
-            </DocLine>
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            <DocLine
-              label={`${booking.eventName} — ${BOOKING_SLOT_LABELS[booking.slot]}`}
-            >
-              {formatCurrency(booking.amount)}
-            </DocLine>
-            {booking.payments.map((p) => (
-              <DocLine key={p.id} label={`${p.id} · ${p.method}`} muted>
-                −{formatCurrency(p.amount)}
-              </DocLine>
-            ))}
-            <Separator />
-            <DocLine label="Total paid" strong>
-              {formatCurrency(paid)}
-            </DocLine>
-          </div>
-        )}
-      </div>
-
-      <DialogFooter>
-        <Button
-          variant="outline"
-          className="w-full gap-1.5"
-          onClick={() => toast.info("Download isn't wired up in this demo.")}
-        >
-          <Printer className="size-4" />
-          Download {isReceipt ? "receipt" : "invoice"}
-        </Button>
-      </DialogFooter>
-    </>
-  );
-}
-
-function DocLine({
-  label,
-  children,
-  strong,
-  muted,
-}: {
-  label: string;
-  children: React.ReactNode;
-  strong?: boolean;
-  muted?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-between gap-3",
-        strong && "text-base font-semibold",
-        muted && "text-muted-foreground",
-      )}
-    >
-      <span className={cn(!strong && !muted && "text-muted-foreground")}>
-        {label}
-      </span>
-      <span className={cn(!strong && "font-medium")}>{children}</span>
     </div>
   );
 }

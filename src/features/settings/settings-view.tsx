@@ -14,6 +14,10 @@ import {
 import { toast } from "sonner";
 import { WhatsappIcon } from "@/features/onboarding/brand-icons";
 import { PAYMENT_GATEWAYS } from "@/features/onboarding/data";
+import {
+  useSettingsStore,
+  type PaymentSettings,
+} from "@/stores/settings.store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -114,17 +118,10 @@ export function SettingsView() {
     sms: false,
     email: true,
   });
-  const [payments, setPayments] = useState({
-    gateway: "stripe",
-    connected: true,
-    upiEnabled: true,
-    upiId: "aurora-events@okhdfcbank",
-    posConnected: false,
-    posProvider: "square",
-    posTerminalId: "",
-    depositPct: "25",
-    payoutSchedule: "weekly",
-  });
+  const payments = useSettingsStore.use.payments();
+  const applyPayments = useSettingsStore.use.setPayments();
+  const setPayments = (updater: (p: PaymentSettings) => PaymentSettings) =>
+    applyPayments(updater(payments));
   const gatewayMeta =
     PAYMENT_GATEWAYS.find((g) => g.value === payments.gateway) ??
     PAYMENT_GATEWAYS[0];

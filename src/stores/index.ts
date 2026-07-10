@@ -7,4 +7,9 @@
  */
 export { useAuthStore, authStore, type AuthUser } from "./auth.store";
 export { useUIStore } from "./ui.store";
+export {
+  useSettingsStore,
+  settingsStore,
+  type PaymentSettings,
+} from "./settings.store";
 export { createSelectors } from "./create-selectors";

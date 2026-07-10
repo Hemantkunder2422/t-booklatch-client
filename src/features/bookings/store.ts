@@ -7,7 +7,7 @@ import type {
   EventType,
 } from "@/types/models";
 
-export type PayMethod = "UPI" | "Card" | "Cash" | "Bank transfer";
+export type PayMethod = "UPI" | "Card" | "Cash" | "Payment link";
 
 export interface Payment {
   id: string;
@@ -26,6 +26,8 @@ export interface Booking {
   eventName: string;
   eventType: EventType;
   bookingDate: string;
+  /** Payment due date — drives the "overdue" flag in the Payments worklist. */
+  dueDate: string;
   slot: BookingSlot;
   bookingStatus: BookingStatus;
   source: BookingSource;
@@ -53,6 +55,12 @@ export const STATUS_STYLE: Record<BookingStatus, string> = {
 export const paidOf = (b: Booking) =>
   b.payments.reduce((s, p) => s + p.amount, 0);
 
+export const balanceOf = (b: Booking) => Math.max(0, b.amount - paidOf(b));
+
+/** Money still owed on a live (non-cancelled) booking. */
+export const isOutstanding = (b: Booking) =>
+  b.bookingStatus !== "CANCELLED" && balanceOf(b) > 0;
+
 export function payStatus(b: Booking): { label: string; className: string } {
   const paid = paidOf(b);
   if (b.invoiceId || paid >= b.amount)
@@ -76,6 +84,7 @@ const INITIAL: Booking[] = [
     eventName: "Bennett–Cole Wedding",
     eventType: "WEDDING",
     bookingDate: "2026-06-28",
+    dueDate: "2026-06-14",
     slot: "EVENING",
     bookingStatus: "CONFIRMED",
     source: "INTERNAL",
@@ -97,9 +106,10 @@ const INITIAL: Booking[] = [
     customerEmail: "marcus@northwind.io",
     eventName: "Northwind Offsite",
     eventType: "CORPORATE",
-    bookingDate: "2026-06-27",
+    bookingDate: "2026-07-27",
+    dueDate: "2026-07-13",
     slot: "MORNING",
-    bookingStatus: "CONFIRMED",
+    bookingStatus: "PENDING",
     source: "PHONE",
     pax: 40,
     amount: 190000,
@@ -116,12 +126,51 @@ const INITIAL: Booking[] = [
     customerEmail: "priya.nair@aurora.org",
     eventName: "Aurora Foundation Gala",
     eventType: "RECEPTION",
-    bookingDate: "2026-06-25",
+    bookingDate: "2026-07-25",
+    dueDate: "2026-06-25",
     slot: "EVENING",
     bookingStatus: "PENDING",
     source: "WHATSAPP",
     pax: 120,
     amount: 260000,
+    payments: [],
+  },
+  {
+    id: "BK-2044",
+    venueSpaceId: "sp-1",
+    venueSpaceName: "Grand Atrium Hall",
+    customerName: "Hannah Brooks",
+    customerPhone: "+14155550123",
+    customerEmail: "hannah.brooks@gmail.com",
+    eventName: "Brooks Wedding",
+    eventType: "WEDDING",
+    bookingDate: "2026-08-18",
+    dueDate: "2026-07-05",
+    slot: "FULL_DAY",
+    bookingStatus: "PENDING",
+    source: "INTERNAL",
+    pax: 220,
+    amount: 500000,
+    payments: [
+      { id: "RCPT-5025", amount: 75000, method: "Card", date: "2026-06-28" },
+    ],
+  },
+  {
+    id: "BK-2045",
+    venueSpaceId: "sp-2",
+    venueSpaceName: "Riverside Pavilion",
+    customerName: "Theo Lambert",
+    customerPhone: "+14155550199",
+    customerEmail: "theo@brightlabs.io",
+    eventName: "Bright Labs Offsite",
+    eventType: "CORPORATE",
+    bookingDate: "2026-08-02",
+    dueDate: "2026-07-20",
+    slot: "FULL_DAY",
+    bookingStatus: "PENDING",
+    source: "CUSTOMER_APP",
+    pax: 60,
+    amount: 320000,
     payments: [],
   },
 ];
@@ -134,6 +183,7 @@ export interface NewBookingInput {
   eventName: string;
   eventType: EventType;
   bookingDate: string;
+  dueDate?: string;
   slot: BookingSlot;
   source: BookingSource;
   pax: number;
@@ -145,6 +195,8 @@ interface CollectResult {
   receiptId: string;
   invoiceGenerated: boolean;
   invoiceId?: string;
+  /** True when this payment cleared the balance and confirmed the booking. */
+  confirmed: boolean;
 }
 
 interface BookingsState {
@@ -156,9 +208,10 @@ interface BookingsState {
     method: PayMethod,
   ) => CollectResult | null;
   setStatus: (id: string, status: BookingStatus) => void;
+  cancelBooking: (id: string) => void;
 }
 
-let bookingCounter = 2042;
+let bookingCounter = 2046;
 let receiptCounter = 5030;
 let invoiceCounter = 1044;
 
@@ -176,7 +229,9 @@ const useBookingsStoreBase = create<BookingsState>()((set, get) => ({
       eventName: input.eventName,
       eventType: input.eventType,
       bookingDate: input.bookingDate,
+      dueDate: input.dueDate ?? input.bookingDate,
       slot: input.slot,
+      // New bookings stay PENDING until the payment is collected in full.
       bookingStatus: "PENDING",
       source: input.source,
       pax: input.pax,
@@ -202,12 +257,20 @@ const useBookingsStoreBase = create<BookingsState>()((set, get) => ({
 
     let invoiceId = booking.invoiceId;
     let bookingStatus = booking.bookingStatus;
-    if (paid > 0 && bookingStatus === "PENDING") bookingStatus = "CONFIRMED";
-
     let invoiceGenerated = false;
-    if (paid >= booking.amount && !invoiceId) {
-      invoiceId = `INV-${invoiceCounter++}`;
-      invoiceGenerated = true;
+    let confirmed = false;
+
+    // A booking only confirms once it's fully paid; an invoice is generated at
+    // the same moment. Advances leave the booking PENDING (receipt only).
+    if (paid >= booking.amount) {
+      if (bookingStatus === "PENDING") {
+        bookingStatus = "CONFIRMED";
+        confirmed = true;
+      }
+      if (!invoiceId) {
+        invoiceId = `INV-${invoiceCounter++}`;
+        invoiceGenerated = true;
+      }
     }
 
     set((s) => ({
@@ -215,12 +278,20 @@ const useBookingsStoreBase = create<BookingsState>()((set, get) => ({
         b.id === id ? { ...b, payments, invoiceId, bookingStatus } : b,
       ),
     }));
-    return { receiptId: payment.id, invoiceGenerated, invoiceId };
+    return { receiptId: payment.id, invoiceGenerated, invoiceId, confirmed };
   },
   setStatus: (id, bookingStatus) =>
     set((s) => ({
       bookings: s.bookings.map((b) =>
         b.id === id ? { ...b, bookingStatus } : b,
+      ),
+    })),
+  // Cancelling releases the slot; the calendar derives availability from
+  // bookings, so a cancelled booking automatically frees its slot there.
+  cancelBooking: (id) =>
+    set((s) => ({
+      bookings: s.bookings.map((b) =>
+        b.id === id ? { ...b, bookingStatus: "CANCELLED" } : b,
       ),
     })),
 }));
