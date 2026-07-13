@@ -24,9 +24,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { WhatsappIcon } from "@/features/onboarding/brand-icons";
+import { timeRange } from "@/features/calendar/utils";
 import { cn, formatCurrency, formatDate, getInitials } from "@/lib/utils";
 import {
-  BOOKING_SLOT_LABELS,
   BOOKING_SOURCE_LABELS,
   BOOKING_STATUS_LABELS,
   EVENT_TYPE_LABELS,
@@ -129,10 +129,10 @@ export function BookingDetail({ id }: { id: string }) {
               </Field>
               <Field
                 icon={<CalendarClock className="size-4" />}
-                label="Date & slot"
+                label="Date & time"
               >
                 {formatDate(booking.bookingDate)} ·{" "}
-                {BOOKING_SLOT_LABELS[booking.slot]}
+                {timeRange(booking.startTime, booking.endTime)}
               </Field>
               <Field icon={<Users className="size-4" />} label="Guests">
                 {booking.pax.toLocaleString()}

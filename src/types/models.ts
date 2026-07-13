@@ -137,7 +137,9 @@ export interface Booking {
   eventName: string;
   eventType: EventType;
   bookingDate: string;
-  slot: BookingSlot;
+  /** Local 24h times, "HH:mm" — bookings are continuous, not fixed slots. */
+  startTime: string;
+  endTime: string;
   bookingStatus: BookingStatus;
   source: BookingSource;
   pax: number;

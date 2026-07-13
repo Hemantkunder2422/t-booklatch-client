@@ -2,10 +2,10 @@ import type { Booking } from "@/features/bookings/store";
 import type { CalendarEvent } from "./types";
 
 /**
- * Project live bookings onto the calendar so availability always reflects the
- * real book of business. Confirmed/completed bookings occupy the slot; pending
- * ones are shown as holds. Cancelled bookings are omitted entirely — which is
- * how cancelling a booking frees its slot on the calendar.
+ * Project live bookings onto the calendar as continuous time blocks so
+ * availability always reflects the real book of business. Confirmed/completed
+ * bookings occupy their window; pending ones show as holds. Cancelled bookings
+ * are omitted — which is how cancelling frees the slot on the calendar.
  */
 export function bookingsToEvents(bookings: Booking[]): CalendarEvent[] {
   return bookings
@@ -15,7 +15,8 @@ export function bookingsToEvents(bookings: Booking[]): CalendarEvent[] {
       return {
         id: `booking-${b.id}`,
         date: b.bookingDate,
-        slot: b.slot,
+        start: b.startTime,
+        end: b.endTime,
         status: hold ? "BLOCKED" : "BOOKED",
         title: hold ? `Hold — ${b.eventName}` : b.eventName,
         space: b.venueSpaceName,
@@ -23,7 +24,8 @@ export function bookingsToEvents(bookings: Booking[]): CalendarEvent[] {
         booking: {
           customer: b.customerName,
           space: b.venueSpaceName,
-          slot: b.slot,
+          start: b.startTime,
+          end: b.endTime,
           amount: b.amount,
         },
       } satisfies CalendarEvent;

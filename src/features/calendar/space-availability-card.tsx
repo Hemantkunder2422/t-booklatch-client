@@ -2,16 +2,17 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardAction,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -19,40 +20,57 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BOOKING_SPACES, useBookingsStore } from "@/features/bookings/store";
 import { cn } from "@/lib/utils";
-import { Calendar } from "./calendar";
+import { bookingsToEvents } from "./booking-events";
 import { CalendarLegend } from "./calendar-legend";
-import { SAMPLE_SPACES, buildSampleEvents } from "./sample-events";
-import { STATUS_META } from "./types";
-import { dateKey } from "./utils";
+import { parseInputMonth } from "./pricing";
+import { buildSampleEvents } from "./sample-events";
+import { TimeGrid } from "./time-grid";
+import type { CalendarEvent } from "./types";
+import { addDays, dateKey, startOfWeek } from "./utils";
+
+const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function SpaceAvailabilityCard() {
-  const [{ allEvents, initialDate }] = useState(() => {
+  const router = useRouter();
+  const bookings = useBookingsStore.use.bookings();
+
+  const [{ ambiance, today }] = useState(() => {
     const now = new Date();
-    return { allEvents: buildSampleEvents(now), initialDate: now };
+    return {
+      ambiance: buildSampleEvents(now).filter((e) => !e.booking),
+      today: now,
+    };
   });
-  const [selected, setSelected] = useState<Date | null>(initialDate);
+
+  const [selected, setSelected] = useState<Date>(today);
   const [space, setSpace] = useState("all");
 
-  const events = useMemo(
-    () =>
-      space === "all"
-        ? allEvents
-        : allEvents.filter((e) => e.space === space),
-    [allEvents, space],
-  );
+  const events = useMemo(() => {
+    const all = [...ambiance, ...bookingsToEvents(bookings)];
+    return space === "all" ? all : all.filter((e) => e.space === space);
+  }, [ambiance, bookings, space]);
 
-  const selectedKey = selected ? dateKey(selected) : null;
-  const dayEvents = useMemo(
-    () => (selectedKey ? events.filter((e) => e.date === selectedKey) : []),
-    [events, selectedKey],
-  );
+  const weekDays = useMemo(() => {
+    const start = startOfWeek(selected);
+    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+  }, [selected]);
+
+  const todayKey = dateKey(today);
+  const selectedKey = dateKey(selected);
+  const monthValue = `${selected.getFullYear()}-${String(selected.getMonth() + 1).padStart(2, "0")}`;
+
+  function onPickEvent(event: CalendarEvent) {
+    if (event.id.startsWith("booking-")) {
+      router.push(`/bookings/${event.id.replace("booking-", "")}`);
+    }
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Space availability</CardTitle>
-        <CardDescription>Quick view of your booking calendar.</CardDescription>
         <CardAction>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/calendars">
@@ -63,56 +81,120 @@ export function SpaceAvailabilityCard() {
         </CardAction>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Space selector */}
         <Select value={space} onValueChange={setSpace}>
           <SelectTrigger className="w-full" size="sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All spaces</SelectItem>
-            {SAMPLE_SPACES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
+            {BOOKING_SPACES.map((s) => (
+              <SelectItem key={s.id} value={s.name}>
+                {s.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
-        <Calendar
-          events={events}
-          selected={selected}
-          onSelectDate={(date) => setSelected(date)}
-          variant="mini"
-          defaultMonth={initialDate}
-        />
+        {/* Month / year navigation */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7 shrink-0"
+            onClick={() => setSelected((d) => addDays(d, -7))}
+            aria-label="Previous week"
+          >
+            <ChevronLeft className="size-4" />
+          </Button>
+          <Input
+            type="month"
+            value={monthValue}
+            onChange={(e) => {
+              const parsed = parseInputMonth(e.target.value);
+              if (parsed) setSelected(new Date(parsed.year, parsed.month, 1));
+            }}
+            className="h-7 flex-1 text-xs"
+            aria-label="Select month and year"
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7 shrink-0"
+            onClick={() => setSelected((d) => addDays(d, 7))}
+            aria-label="Next week"
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+        </div>
 
-        <CalendarLegend className="justify-between gap-y-1 border-t pt-3" />
-
-        {/* Selected-day quick summary */}
-        <div className="space-y-1.5 border-t pt-3">
-          <p className="text-xs font-medium text-muted-foreground">
-            {selected?.toLocaleDateString("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            })}
-          </p>
-          {dayEvents.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No events — open day.</p>
-          ) : (
-            dayEvents.slice(0, 3).map((event) => (
-              <div key={event.id} className="flex items-center gap-2 text-sm">
+        {/* Week day strip */}
+        <div className="grid grid-cols-7 gap-1">
+          {weekDays.map((day) => {
+            const key = dateKey(day);
+            const isSelected = key === selectedKey;
+            const isToday = key === todayKey;
+            const count = events.filter((e) => e.date === key).length;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSelected(day)}
+                className={cn(
+                  "flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-xs transition-colors",
+                  isSelected
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted",
+                )}
+              >
                 <span
                   className={cn(
-                    "size-2 shrink-0 rounded-full",
-                    STATUS_META[event.status].dot,
+                    "font-medium",
+                    isSelected
+                      ? "text-primary-foreground/80"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {WEEKDAY_SHORT[day.getDay()].charAt(0)}
+                </span>
+                <span
+                  className={cn(
+                    "flex size-6 items-center justify-center rounded-full font-medium",
+                    !isSelected && isToday && "ring-1 ring-primary/50",
+                  )}
+                >
+                  {day.getDate()}
+                </span>
+                <span
+                  className={cn(
+                    "size-1 rounded-full",
+                    count > 0
+                      ? isSelected
+                        ? "bg-primary-foreground"
+                        : "bg-primary"
+                      : "bg-transparent",
                   )}
                 />
-                <span className="truncate">{event.title}</span>
-              </div>
-            ))
-          )}
+              </button>
+            );
+          })}
         </div>
+
+        {/* Continuous day timeline */}
+        <div className="rounded-xl border">
+          <TimeGrid
+            days={[selected]}
+            events={events}
+            dayStart={8}
+            dayEnd={23}
+            hourHeight={34}
+            showHeader={false}
+            compact
+            onSelectEvent={onPickEvent}
+            className="max-h-64"
+          />
+        </div>
+
+        <CalendarLegend className="justify-between gap-y-1 border-t pt-3" />
       </CardContent>
     </Card>
   );

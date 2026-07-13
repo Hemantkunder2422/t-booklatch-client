@@ -43,12 +43,11 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { timeRange } from "@/features/calendar/utils";
 import {
-  BOOKING_SLOT_LABELS,
   BOOKING_SOURCE_LABELS,
   BOOKING_STATUS_LABELS,
   EVENT_TYPE_LABELS,
-  type BookingSlot,
   type BookingSource,
   type BookingStatus,
   type EventType,
@@ -62,23 +61,28 @@ import {
 } from "./store";
 
 const EVENT_TYPES = Object.keys(EVENT_TYPE_LABELS) as EventType[];
-const SLOTS = Object.keys(BOOKING_SLOT_LABELS) as BookingSlot[];
 const SOURCES = Object.keys(BOOKING_SOURCE_LABELS) as BookingSource[];
 
-const bookingSchema = z.object({
-  customerName: z.string().trim().min(2, "Customer name is required"),
-  customerPhone: z.string().trim().min(1, "Phone is required"),
-  customerEmail: z.string().min(1, "Email is required").email("Enter a valid email"),
-  venueSpaceId: z.string().min(1, "Select a space"),
-  eventName: z.string().trim().min(1, "Add an event name"),
-  eventType: z.enum(["WEDDING", "BIRTHDAY", "RECEPTION", "CORPORATE", "OTHERS"]),
-  bookingDate: z.string().min(1, "Pick a date"),
-  slot: z.enum(["MORNING", "EVENING", "FULL_DAY"]),
-  pax: z.string().trim().min(1, "Add guest count"),
-  amount: z.string().trim().min(1, "Add an amount"),
-  source: z.enum(["INTERNAL", "PHONE", "WHATSAPP", "CUSTOMER_APP"]),
-  notes: z.string().optional().or(z.literal("")),
-});
+const bookingSchema = z
+  .object({
+    customerName: z.string().trim().min(2, "Customer name is required"),
+    customerPhone: z.string().trim().min(1, "Phone is required"),
+    customerEmail: z.string().min(1, "Email is required").email("Enter a valid email"),
+    venueSpaceId: z.string().min(1, "Select a space"),
+    eventName: z.string().trim().min(1, "Add an event name"),
+    eventType: z.enum(["WEDDING", "BIRTHDAY", "RECEPTION", "CORPORATE", "OTHERS"]),
+    bookingDate: z.string().min(1, "Pick a date"),
+    startTime: z.string().min(1, "Start time"),
+    endTime: z.string().min(1, "End time"),
+    pax: z.string().trim().min(1, "Add guest count"),
+    amount: z.string().trim().min(1, "Add an amount"),
+    source: z.enum(["INTERNAL", "PHONE", "WHATSAPP", "CUSTOMER_APP"]),
+    notes: z.string().optional().or(z.literal("")),
+  })
+  .refine((v) => v.endTime > v.startTime, {
+    message: "End time must be after the start time",
+    path: ["endTime"],
+  });
 type BookingValues = z.infer<typeof bookingSchema>;
 
 export function BookingsView() {
@@ -115,7 +119,8 @@ export function BookingsView() {
       eventName: values.eventName,
       eventType: values.eventType,
       bookingDate: values.bookingDate,
-      slot: values.slot,
+      startTime: values.startTime,
+      endTime: values.endTime,
       source: values.source,
       pax: Number(values.pax.replace(/[^0-9]/g, "")) || 0,
       amount: Number(values.amount.replace(/[^0-9.]/g, "")) || 0,
@@ -179,7 +184,7 @@ export function BookingsView() {
             <TableRow className="bg-muted/40">
               <TableHead>Customer / Event</TableHead>
               <TableHead className="hidden md:table-cell">Space</TableHead>
-              <TableHead className="hidden lg:table-cell">Date · Slot</TableHead>
+              <TableHead className="hidden lg:table-cell">Date · Time</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
@@ -215,7 +220,7 @@ export function BookingsView() {
                     </TableCell>
                     <TableCell className="hidden text-sm lg:table-cell">
                       {formatDate(booking.bookingDate)} ·{" "}
-                      {BOOKING_SLOT_LABELS[booking.slot]}
+                      {timeRange(booking.startTime, booking.endTime)}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="font-medium">
@@ -265,7 +270,8 @@ function NewBookingSheet({
       eventName: "",
       eventType: "WEDDING",
       bookingDate: "",
-      slot: "EVENING",
+      startTime: "18:00",
+      endTime: "22:00",
       pax: "",
       amount: "",
       source: "INTERNAL",
@@ -405,7 +411,7 @@ function NewBookingSheet({
                   )}
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="bookingDate"
@@ -415,30 +421,6 @@ function NewBookingSheet({
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="slot"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Slot</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {SLOTS.map((s) => (
-                            <SelectItem key={s} value={s}>
-                              {BOOKING_SLOT_LABELS[s]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -458,6 +440,34 @@ function NewBookingSheet({
                             field.onChange(e.target.value.replace(/[^0-9]/g, ""))
                           }
                         />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="startTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="endTime"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -32,9 +32,9 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSettingsStore } from "@/stores/settings.store";
+import { timeRange } from "@/features/calendar/utils";
 import { cn, formatCurrency, formatDate, getInitials } from "@/lib/utils";
 import {
-  BOOKING_SLOT_LABELS,
   BOOKING_STATUS_LABELS,
   EVENT_TYPE_LABELS,
 } from "@/types/models";
@@ -597,10 +597,10 @@ export function PaymentDetail({ id }: { id: string }) {
               </InfoRow>
               <InfoRow
                 icon={<CalendarClock className="size-4" />}
-                label="Date & slot"
+                label="Date & time"
               >
                 {formatDate(booking.bookingDate)} ·{" "}
-                {BOOKING_SLOT_LABELS[booking.slot]}
+                {timeRange(booking.startTime, booking.endTime)}
               </InfoRow>
               <InfoRow
                 icon={<CalendarClock className="size-4" />}

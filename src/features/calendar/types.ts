@@ -1,12 +1,14 @@
-import type { BookingSlot, CalendarStatus } from "@/types/models";
+import type { CalendarStatus } from "@/types/models";
 
-/** Calendar slot status mirrors the Prisma `CalendarStatus` enum. */
+/** Calendar entry status mirrors the Prisma `CalendarStatus` enum. */
 export type SlotStatus = CalendarStatus;
 
 export interface BookingInfo {
   customer: string;
   space: string;
-  slot: BookingSlot;
+  /** Continuous window, local 24h "HH:mm". */
+  start: string;
+  end: string;
   amount?: number;
 }
 
@@ -14,7 +16,9 @@ export interface CalendarEvent {
   id: string;
   /** Local date key, format: yyyy-mm-dd */
   date: string;
-  slot: BookingSlot;
+  /** Continuous window, local 24h "HH:mm". */
+  start: string;
+  end: string;
   status: CalendarStatus;
   title: string;
   space?: string;
@@ -24,31 +28,35 @@ export interface CalendarEvent {
 
 export const STATUS_META: Record<
   CalendarStatus,
-  { label: string; dot: string; soft: string; text: string }
+  { label: string; dot: string; soft: string; text: string; border: string }
 > = {
   AVAILABLE: {
     label: "Available",
     dot: "bg-success",
     soft: "bg-success/15",
     text: "text-success",
+    border: "border-success",
   },
   BOOKED: {
     label: "Booked",
     dot: "bg-primary",
     soft: "bg-primary/15",
     text: "text-primary",
+    border: "border-primary",
   },
   BLOCKED: {
-    label: "Blocked",
+    label: "Hold",
     dot: "bg-warning",
     soft: "bg-warning/15",
     text: "text-warning-foreground dark:text-warning",
+    border: "border-warning",
   },
   MAINTENANCE: {
     label: "Maintenance",
     dot: "bg-destructive",
     soft: "bg-destructive/15",
     text: "text-destructive",
+    border: "border-destructive",
   },
 };
 

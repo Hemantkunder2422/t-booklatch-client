@@ -1,11 +1,6 @@
 import { create } from "zustand";
 import { createSelectors } from "@/stores/create-selectors";
-import type {
-  BookingSlot,
-  BookingSource,
-  BookingStatus,
-  EventType,
-} from "@/types/models";
+import type { BookingSource, BookingStatus, EventType } from "@/types/models";
 
 export type PayMethod = "UPI" | "Card" | "Cash" | "Payment link";
 
@@ -28,7 +23,9 @@ export interface Booking {
   bookingDate: string;
   /** Payment due date — drives the "overdue" flag in the Payments worklist. */
   dueDate: string;
-  slot: BookingSlot;
+  /** Continuous booking window as local 24h times, "HH:mm". */
+  startTime: string;
+  endTime: string;
   bookingStatus: BookingStatus;
   source: BookingSource;
   pax: number;
@@ -85,7 +82,8 @@ const INITIAL: Booking[] = [
     eventType: "WEDDING",
     bookingDate: "2026-06-28",
     dueDate: "2026-06-14",
-    slot: "EVENING",
+    startTime: "18:00",
+    endTime: "23:00",
     bookingStatus: "CONFIRMED",
     source: "INTERNAL",
     pax: 180,
@@ -108,7 +106,8 @@ const INITIAL: Booking[] = [
     eventType: "CORPORATE",
     bookingDate: "2026-07-27",
     dueDate: "2026-07-13",
-    slot: "MORNING",
+    startTime: "09:00",
+    endTime: "13:00",
     bookingStatus: "PENDING",
     source: "PHONE",
     pax: 40,
@@ -128,7 +127,8 @@ const INITIAL: Booking[] = [
     eventType: "RECEPTION",
     bookingDate: "2026-07-25",
     dueDate: "2026-06-25",
-    slot: "EVENING",
+    startTime: "19:00",
+    endTime: "23:30",
     bookingStatus: "PENDING",
     source: "WHATSAPP",
     pax: 120,
@@ -146,7 +146,8 @@ const INITIAL: Booking[] = [
     eventType: "WEDDING",
     bookingDate: "2026-08-18",
     dueDate: "2026-07-05",
-    slot: "FULL_DAY",
+    startTime: "10:00",
+    endTime: "22:00",
     bookingStatus: "PENDING",
     source: "INTERNAL",
     pax: 220,
@@ -166,7 +167,8 @@ const INITIAL: Booking[] = [
     eventType: "CORPORATE",
     bookingDate: "2026-08-02",
     dueDate: "2026-07-20",
-    slot: "FULL_DAY",
+    startTime: "09:00",
+    endTime: "18:00",
     bookingStatus: "PENDING",
     source: "CUSTOMER_APP",
     pax: 60,
@@ -184,7 +186,8 @@ export interface NewBookingInput {
   eventType: EventType;
   bookingDate: string;
   dueDate?: string;
-  slot: BookingSlot;
+  startTime: string;
+  endTime: string;
   source: BookingSource;
   pax: number;
   amount: number;
@@ -230,7 +233,8 @@ const useBookingsStoreBase = create<BookingsState>()((set, get) => ({
       eventType: input.eventType,
       bookingDate: input.bookingDate,
       dueDate: input.dueDate ?? input.bookingDate,
-      slot: input.slot,
+      startTime: input.startTime,
+      endTime: input.endTime,
       // New bookings stay PENDING until the payment is collected in full.
       bookingStatus: "PENDING",
       source: input.source,

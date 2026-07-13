@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatCurrency } from "@/lib/utils";
-import { BOOKING_SLOT_LABELS } from "@/types/models";
 import { STATUS_META, type CalendarEvent } from "./types";
+import { timeRange } from "./utils";
 
 export function DayDetails({
   date,
@@ -68,8 +68,14 @@ export function DayDetails({
               key={event.id}
               className="space-y-3 rounded-xl border bg-card/50 p-3"
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold">{event.title}</span>
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-0.5">
+                  <span className="text-sm font-semibold">{event.title}</span>
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <CalendarClock className="size-3" />
+                    {timeRange(event.start, event.end)}
+                  </p>
+                </div>
                 <span
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
@@ -96,7 +102,7 @@ export function DayDetails({
                     {event.booking.space}
                   </DetailRow>
                   <DetailRow icon={<CalendarClock className="size-3.5" />}>
-                    {BOOKING_SLOT_LABELS[event.booking.slot]}
+                    {timeRange(event.booking.start, event.booking.end)}
                   </DetailRow>
                   {event.booking.amount != null && (
                     <p className="pt-1 text-sm font-semibold text-foreground">
