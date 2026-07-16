@@ -21,7 +21,7 @@ const HIGHLIGHTS = [
 
 export function LoginBrandPanel() {
   return (
-    <div className="relative hidden overflow-hidden bg-linear-to-br from-primary via-primary to-chart-4 text-white lg:flex lg:flex-col lg:justify-between lg:p-12">
+    <div className="brand-surface relative hidden overflow-hidden text-white lg:flex lg:flex-col lg:justify-between lg:p-12">
       {/* Drifting glows */}
       <div className="pointer-events-none absolute -top-24 -right-24 size-96 rounded-full bg-white/15 blur-3xl [animation:splash-float_11s_ease-in-out_infinite]" />
       <div className="pointer-events-none absolute -bottom-32 -left-20 size-96 rounded-full bg-black/15 blur-3xl [animation:splash-float_14s_ease-in-out_infinite_reverse]" />

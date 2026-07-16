@@ -86,7 +86,7 @@ export function BookingDetail({ id }: { id: string }) {
         <CardContent className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <Avatar className="size-14">
-              <AvatarFallback className="bg-linear-to-br from-primary to-chart-4 text-lg font-semibold text-white">
+              <AvatarFallback className="bg-linear-to-br from-primary to-chart-4 text-lg font-semibold text-primary-foreground">
                 {getInitials(booking.customerName)}
               </AvatarFallback>
             </Avatar>

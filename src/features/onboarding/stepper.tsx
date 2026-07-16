@@ -55,13 +55,16 @@ export function Stepper({
                   !isActive && !isComplete && "border-transparent",
                 )}
               >
-                {/* Icon tile */}
+                {/* Icon tile — the rail is an always-dark brand surface, so the
+                    ink on these white tiles is pinned to --brand-surface-from.
+                    `text-primary` would invert to white in dark mode and make
+                    the icon vanish against the tile. */}
                 <div
                   className={cn(
                     "flex size-10 shrink-0 items-center justify-center rounded-xl transition-all duration-300",
-                    isComplete && "bg-white/90 text-primary",
+                    isComplete && "bg-white/90 text-(--brand-surface-from)",
                     isActive &&
-                      "bg-white text-primary ring-4 ring-white/15",
+                      "bg-white text-(--brand-surface-from) ring-4 ring-white/15",
                     !isComplete &&
                       !isActive &&
                       "bg-white/10 text-white/55",

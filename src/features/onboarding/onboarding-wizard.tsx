@@ -134,9 +134,9 @@ export function OnboardingWizard() {
     <Form {...form}>
       <div className="grid min-h-svh lg:grid-cols-[21rem_1fr]">
         {/* Left rail — pinned so it never scrolls with the form */}
-        <aside className="relative hidden overflow-hidden bg-linear-to-br from-primary via-primary to-chart-4 p-10 text-white lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:justify-between">
+        <aside className="brand-surface relative hidden overflow-hidden p-10 text-white lg:sticky lg:top-0 lg:flex lg:h-svh lg:flex-col lg:justify-between">
           <div className="pointer-events-none absolute -top-20 -right-24 size-80 rounded-full bg-white/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 -left-16 size-80 rounded-full bg-chart-4/30 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-24 -left-16 size-80 rounded-full bg-[color-mix(in_oklab,var(--brand-surface-to)_30%,transparent)] blur-3xl" />
 
           <div className="relative space-y-12">
             <div className="flex items-center gap-2.5">
@@ -201,7 +201,7 @@ export function OnboardingWizard() {
           <div className="relative flex-1 overflow-y-auto px-6 py-10 sm:px-10">
             <div className="mx-auto w-full max-w-2xl">
               <header className="mb-8 flex items-start gap-4">
-                <span className="hidden size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-chart-4 text-white shadow-lg shadow-primary/20 lg:flex">
+                <span className="brand-surface hidden size-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg shadow-primary/20 lg:flex">
                   <StepIcon className="size-6" />
                 </span>
                 <div className="space-y-1.5">

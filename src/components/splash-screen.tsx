@@ -52,7 +52,7 @@ export function SplashScreen() {
         <div className="relative">
           <span className="absolute inset-0 rounded-3xl bg-primary/40 [animation:splash-ring_2.2s_ease-out_infinite]" />
           <span className="absolute inset-0 rounded-3xl bg-primary/30 [animation:splash-ring_2.2s_ease-out_infinite_0.6s]" />
-          <div className="relative flex size-20 items-center justify-center rounded-3xl bg-linear-to-br from-primary to-chart-4 text-white shadow-2xl shadow-primary/40 duration-700 animate-in zoom-in-50 fade-in">
+          <div className="brand-surface relative flex size-20 items-center justify-center rounded-3xl text-white shadow-2xl shadow-primary/40 duration-700 animate-in zoom-in-50 fade-in">
             <BookLatchMark className="size-11" />
           </div>
         </div>

@@ -5,120 +5,193 @@
 
 /**
  * BookLatch — Venue Management Platform
- * Theme: modern, aesthetic & trusted.
- * Brand hue is a deep indigo-violet (trust + sophistication),
- * paired with a calm teal accent and warm amber for highlights.
- * Colors are authored in OKLCH for perceptual consistency.
+ * Palette matched to the BookLatch marketing site.
+ *
+ * Monochrome brand: no accent hue. Hierarchy comes from two ladders —
+ * surfaces stepping off the canvas, ink stepping down from the foreground —
+ * separated by hairline borders. No shadows, no gradients.
+ *
+ * Emphasis is inversion: dark mode = white button + black label;
+ * light mode = near-black button + white label.
+ *
+ * Chroma is reserved for state (success / warning / destructive / info) and
+ * chart series only — never brand, never decoration.
+ *
+ * All pairings are WCAG-verified. Two rules worth keeping in mind:
+ *   1. In dark mode the semantic colours are bright fills, so their labels
+ *      are BLACK. White text on them fails contrast.
+ *   2. --ink-tertiary is large-text / disabled only in both themes (~3.6:1).
  */
+
+/* ── LIGHT ──────────────────────────────────────────────────────── */
 :root {
-  --radius: 0.75rem;
+  --radius: 8px;
 
-  --background: oklch(0.991 0.003 270);
-  --foreground: oklch(0.21 0.02 270);
+  --canvas: #ffffff;
+  --surface-1: #fafbfb;
+  --surface-2: #f4f5f6;
+  --surface-3: #eef0f1;
+  --surface-4: #e8eaec;
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.02 270);
+  --hairline: #e4e6e9;
+  --hairline-strong: #cfd2d6;
+  --hairline-tertiary: #babec3;
 
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.02 270);
+  --ink: #0d0e10;
+  --ink-muted: #3a3d42;
+  --ink-subtle: #6a6f76;
+  --ink-tertiary: #80868e;
 
-  --primary: oklch(0.548 0.214 267);
-  --primary-foreground: oklch(0.985 0.002 270);
+  --background: var(--canvas);
+  --foreground: var(--ink);
 
-  --secondary: oklch(0.965 0.012 270);
-  --secondary-foreground: oklch(0.32 0.04 268);
+  --card: var(--canvas);
+  --card-foreground: var(--ink);
 
-  --muted: oklch(0.965 0.008 270);
-  --muted-foreground: oklch(0.52 0.02 268);
+  --popover: var(--canvas);
+  --popover-foreground: var(--ink);
 
-  --accent: oklch(0.95 0.03 200);
-  --accent-foreground: oklch(0.34 0.06 220);
+  --primary: #0d0e10;
+  --primary-foreground: #ffffff;
 
-  --destructive: oklch(0.58 0.22 27);
-  --destructive-foreground: oklch(0.985 0.002 270);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
 
-  --success: oklch(0.62 0.15 162);
-  --success-foreground: oklch(0.985 0.002 270);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-subtle);
 
-  --warning: oklch(0.76 0.16 75);
-  --warning-foreground: oklch(0.28 0.06 75);
+  --accent: var(--surface-3);
+  --accent-foreground: var(--ink);
 
-  --border: oklch(0.915 0.008 270);
-  --input: oklch(0.915 0.008 270);
-  --ring: oklch(0.548 0.214 267);
+  --destructive: #d1242f;
+  --destructive-foreground: #ffffff;
+  --success: #1a7f37;
+  --success-foreground: #ffffff;
+  --warning: #8a5d00;
+  --warning-foreground: #ffffff;
+  --info: #4f5bd5;
+  --info-foreground: #ffffff;
 
-  --chart-1: oklch(0.548 0.214 267);
-  --chart-2: oklch(0.62 0.15 195);
-  --chart-3: oklch(0.7 0.16 75);
-  --chart-4: oklch(0.64 0.2 330);
-  --chart-5: oklch(0.62 0.15 162);
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: #0d0e10;
 
-  --sidebar: oklch(0.985 0.005 270);
-  --sidebar-foreground: oklch(0.21 0.02 270);
-  --sidebar-primary: oklch(0.548 0.214 267);
-  --sidebar-primary-foreground: oklch(0.985 0.002 270);
-  --sidebar-accent: oklch(0.965 0.012 270);
-  --sidebar-accent-foreground: oklch(0.32 0.04 268);
-  --sidebar-border: oklch(0.915 0.008 270);
-  --sidebar-ring: oklch(0.548 0.214 267);
+  --chart-1: #5a616b;
+  --chart-2: #4f5bd5;
+  --chart-3: #0f7a6e;
+  --chart-4: #b1541f;
+  --chart-5: #8244c4;
+
+  /**
+   * Brand surface — the login panel. Deliberately FIXED across themes: it is
+   * an always-dark marketing surface carrying white text, so it must not
+   * invert with the theme (--primary flips to white in dark mode, which would
+   * erase the copy on it). Defined only here — never redefine under .dark.
+   */
+  --brand-surface-from: #0d0e10;
+  --brand-surface-to: #b1541f;
+
+  --sidebar: var(--surface-1);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--hairline);
+  --sidebar-ring: var(--ring);
 }
 
+/* ── DARK — identical to the marketing site ─────────────────────── */
 .dark {
-  --background: oklch(0.176 0.018 270);
-  --foreground: oklch(0.97 0.006 270);
+  --canvas: #010102;
+  --surface-1: #0f1011;
+  --surface-2: #141516;
+  --surface-3: #18191a;
+  --surface-4: #191a1b;
 
-  --card: oklch(0.214 0.02 270);
-  --card-foreground: oklch(0.97 0.006 270);
+  --hairline: #23252a;
+  --hairline-strong: #34343a;
+  --hairline-tertiary: #3e3e44;
 
-  --popover: oklch(0.214 0.02 270);
-  --popover-foreground: oklch(0.97 0.006 270);
+  --ink: #f7f8f8;
+  --ink-muted: #d0d6e0;
+  --ink-subtle: #8a8f98;
+  --ink-tertiary: #62666d;
 
-  --primary: oklch(0.685 0.18 268);
-  --primary-foreground: oklch(0.17 0.02 270);
+  --background: var(--canvas);
+  --foreground: var(--ink);
 
-  --secondary: oklch(0.27 0.02 270);
-  --secondary-foreground: oklch(0.97 0.006 270);
+  --card: var(--surface-1);
+  --card-foreground: var(--ink);
 
-  --muted: oklch(0.27 0.02 270);
-  --muted-foreground: oklch(0.7 0.02 268);
+  --popover: var(--surface-3);
+  --popover-foreground: var(--ink);
 
-  --accent: oklch(0.3 0.04 215);
-  --accent-foreground: oklch(0.92 0.03 200);
+  --primary: #ffffff;
+  --primary-foreground: #000000;
 
-  --destructive: oklch(0.66 0.2 25);
-  --destructive-foreground: oklch(0.97 0.006 270);
+  --secondary: var(--surface-1);
+  --secondary-foreground: var(--ink);
 
-  --success: oklch(0.68 0.15 162);
-  --success-foreground: oklch(0.17 0.02 270);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-subtle);
 
-  --warning: oklch(0.78 0.15 75);
-  --warning-foreground: oklch(0.2 0.04 75);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--ink);
 
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.685 0.18 268);
+  --destructive: #f85149;
+  --destructive-foreground: #010102;
+  --success: #3fb950;
+  --success-foreground: #010102;
+  --warning: #e3b341;
+  --warning-foreground: #010102;
+  --info: #828fff;
+  --info-foreground: #010102;
 
-  --chart-1: oklch(0.685 0.18 268);
-  --chart-2: oklch(0.7 0.14 195);
-  --chart-3: oklch(0.78 0.15 75);
-  --chart-4: oklch(0.7 0.2 330);
-  --chart-5: oklch(0.68 0.15 162);
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: #f7f8f8;
 
-  --sidebar: oklch(0.205 0.02 270);
-  --sidebar-foreground: oklch(0.97 0.006 270);
-  --sidebar-primary: oklch(0.685 0.18 268);
-  --sidebar-primary-foreground: oklch(0.17 0.02 270);
-  --sidebar-accent: oklch(0.27 0.02 270);
-  --sidebar-accent-foreground: oklch(0.97 0.006 270);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.685 0.18 268);
+  --chart-1: #d0d6e0;
+  --chart-2: #828fff;
+  --chart-3: #4dd4c4;
+  --chart-4: #f0a878;
+  --chart-5: #c58af9;
+
+  --sidebar: var(--surface-1);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--hairline);
+  --sidebar-ring: var(--ring);
+}
+
+/**
+ * Always-dark brand surface — login/onboarding panels, the logo tile, the
+ * splash mark. Built from --brand-surface-*, which never change with the
+ * theme, so these render identically in light and dark. Always pair with
+ * `text-white`; never swap in --primary here (it inverts).
+ */
+@utility brand-surface {
+  background-image: linear-gradient(
+    to bottom right,
+    var(--brand-surface-from) 0%,
+    var(--brand-surface-from) 55%,
+    var(--brand-surface-to) 100%
+  );
 }
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  /* rounded-md = 8px buttons/inputs · rounded-lg = 12px cards
+     rounded-xl = 16px panels · pills for badges + avatars only */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -140,14 +213,31 @@
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --color-canvas: var(--canvas);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-hairline-tertiary: var(--hairline-tertiary);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-ink-tertiary: var(--ink-tertiary);
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
