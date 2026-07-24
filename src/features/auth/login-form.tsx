@@ -21,14 +21,31 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { useAuthStore } from "@/stores/auth.store";
 import type { ApiError } from "@/types/api";
+import { DEV_LOGIN_ENABLED, DEV_USER } from "./dev-login";
 import { loginSchema, type LoginValues } from "./schema";
 import { useSignin } from "./use-auth";
+
+/** Same-origin relative path only — blocks `//evil.com` open redirects. */
+function safeNext(next: string | null): string {
+  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+}
 
 export function LoginForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const { mutateAsync: signin, isPending } = useSignin();
+  const setAuth = useAuthStore.use.setAuth();
+
+  function handleDevLogin() {
+    setAuth(DEV_USER);
+    toast.success("Dev bypass", {
+      description: "Signed in with a local dev account.",
+    });
+    const next = new URLSearchParams(window.location.search).get("next");
+    router.push(safeNext(next));
+  }
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "", remember: true },
@@ -184,6 +201,27 @@ export function LoginForm() {
         <GoogleIcon className="size-4" />
         Continue with Google
       </Button>
+
+      {DEV_LOGIN_ENABLED && (
+        <div className="space-y-2 rounded-lg border border-dashed border-warning/50 bg-warning/5 p-3">
+          <p className="text-xs font-semibold text-foreground">
+            Development mode
+          </p>
+          <p className="text-xs leading-5 text-muted-foreground">
+            Skip authentication and enter the app with a local dev account. This
+            option only exists in development builds.
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="w-full"
+            onClick={handleDevLogin}
+          >
+            Skip login (dev only)
+          </Button>
+        </div>
+      )}
 
       <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
