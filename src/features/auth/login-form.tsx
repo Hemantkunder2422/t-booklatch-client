@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ApiError } from "@/types/api";
 import { loginSchema, type LoginValues } from "./schema";
 import { useSignin } from "./use-auth";
@@ -60,18 +61,17 @@ export function LoginForm() {
   const isSubmitting = isPending;
 
   return (
-    <div className="w-full max-w-sm space-y-8">
-      {/* Mobile brand mark */}
-      <BookLatchLogo className="lg:hidden" textClassName="text-base" />
-
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-        <p className="text-sm text-muted-foreground">
+    <Card className="w-full max-w-md mx-auto shadow-lg border-muted/20">
+      <CardHeader className="space-y-2 text-center pb-8 pt-8">
+        <BookLatchLogo className="lg:hidden mx-auto mb-4" textClassName="text-base" />
+        <CardTitle className="text-3xl font-bold tracking-tight">Welcome back</CardTitle>
+        <CardDescription className="text-base">
           Sign in to your venue management workspace.
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
 
-      <Form {...form}>
+      <CardContent>
+        <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
           <FormField
             control={form.control}
@@ -162,39 +162,42 @@ export function LoginForm() {
             )}
           />
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="size-4 animate-spin" />}
+          <Button type="submit" className="w-full h-11 text-base font-medium mt-4" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="size-5 animate-spin mr-2" />}
             {isSubmitting ? "Signing in…" : "Sign in"}
           </Button>
         </form>
       </Form>
+      </CardContent>
 
-      <div className="flex items-center gap-3">
-        <Separator className="flex-1" />
-        <span className="text-xs text-muted-foreground">OR</span>
-        <Separator className="flex-1" />
-      </div>
+      <CardFooter className="flex flex-col gap-6 pb-8">
+        <div className="flex items-center gap-3 w-full">
+          <Separator className="flex-1" />
+          <span className="text-xs text-muted-foreground uppercase font-medium">OR</span>
+          <Separator className="flex-1" />
+        </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        onClick={() => toast.info("SSO is not wired up in this demo.")}
-      >
-        <GoogleIcon className="size-4" />
-        Continue with Google
-      </Button>
-
-      <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link
-          href="/register"
-          className="font-medium text-primary hover:underline"
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full h-11"
+          onClick={() => toast.info("SSO is not wired up in this demo.")}
         >
-          Start free trial
-        </Link>
-      </p>
-    </div>
+          <GoogleIcon className="size-5 mr-2" />
+          Continue with Google
+        </Button>
+
+        <p className="text-center text-sm text-muted-foreground mt-2">
+          Don&apos;t have an account?{" "}
+          <Link
+            href="/register"
+            className="font-medium text-primary hover:underline transition-colors"
+          >
+            Start free trial
+          </Link>
+        </p>
+      </CardFooter>
+    </Card>
   );
 }
 
