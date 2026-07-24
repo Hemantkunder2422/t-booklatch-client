@@ -1,6 +1,7 @@
 "use client";
 
 import { Toaster } from "@/components/ui/sonner";
+import { DevAuthBootstrap } from "@/features/auth/dev-auth-bootstrap";
 import { QueryProvider } from "./query-provider";
 import { ThemeProvider } from "./theme-provider";
 
@@ -15,6 +16,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     >
       <QueryProvider>
         {children}
+        <DevAuthBootstrap />
         <Toaster richColors position="top-right" />
       </QueryProvider>
     </ThemeProvider>

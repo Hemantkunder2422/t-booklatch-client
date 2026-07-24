@@ -23,13 +23,29 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ApiError } from "@/types/api";
+import { DEV_LOGIN_ENABLED, DEV_USER } from "./dev-login";
 import { loginSchema, type LoginValues } from "./schema";
 import { useSignin } from "./use-auth";
+
+/** Same-origin relative path only — blocks `//evil.com` open redirects. */
+function safeNext(next: string | null): string {
+  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+}
 
 export function LoginForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const { mutateAsync: signin, isPending } = useSignin();
+  const setAuth = useAuthStore.use.setAuth();
+
+  function handleDevLogin() {
+    setAuth(DEV_USER);
+    toast.success("Dev bypass", {
+      description: "Signed in with a local dev account.",
+    });
+    const next = new URLSearchParams(window.location.search).get("next");
+    router.push(safeNext(next));
+  }
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "", remember: true },
